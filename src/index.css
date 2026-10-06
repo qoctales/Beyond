@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Syne", sans-serif;
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --color-racing-red: #ff3b1d;
+  --color-racing-orange: #f25822;
+  --color-earth-red: #c8481e;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: #08090c;
+    color: #e2e4e8;
+    overflow-x: hidden;
+  }
+  
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+  }
+
+  code, pre, .font-mono, [data-mono] {
+    font-family: var(--font-mono);
+  }
+}
+
+/* Subtle blueprint grid */
+.blueprint-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Fine camera viewport grid */
+.viewfinder-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+/* Subtle carbon texture */
+.carbon-pattern {
+  background: 
+    radial-gradient(black 15%, transparent 16%) 0 0,
+    radial-gradient(black 15%, transparent 16%) 4px 4px,
+    radial-gradient(rgba(255,255,255,.05) 15%, transparent 20%) 0 1px,
+    radial-gradient(rgba(255,255,255,.05) 15%, transparent 20%) 4px 5px;
+  background-color: #0c0d12;
+  background-size: 8px 8px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #08090c;
+}
+::-webkit-scrollbar-thumb {
+  background: #252833;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ff3b1d;
+}
+
+/* Print to PDF optimizations */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #11131a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  header, .fixed, .pointer-events-none, button, nav {
+    display: none !important;
+  }
+
+  section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    page-break-after: always;
+    break-after: page;
+    background-color: #ffffff !important;
+    color: #11131a !important;
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+  h1, h2, h3, h4 {
+    color: #0c0d12 !important;
+  }
+
+  p, span, td, th {
+    color: #333842 !important;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  tr {
+    border-bottom: 1px solid #e2e4e8 !important;
+  }
+
+  img {
+    max-height: 400px;
+    object-fit: cover;
+  }
+}
