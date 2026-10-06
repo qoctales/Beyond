@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { 
-  ChevronLeft, ChevronRight, Volume2, VolumeX, 
-  Film, Mic, Music, Download, Check
+  ChevronLeft, ChevronRight, Volume2, VolumeX
 } from 'lucide-react';
 import { SLIDES, SlideData, resolveImage } from '../data/slidesData';
 import { InteractiveCircuitMap } from './InteractiveCircuitMap';
 import { CircuitNarrativeNavigator } from './CircuitNarrativeNavigator';
 import { PlanningBudgetSection } from './PlanningBudgetSection';
+import { ThreeEntriesBox } from './ThreeEntriesBox';
 import { audioSystem } from '../utils/audioSystem';
 import { sound } from '../utils/audio';
 import { scrollToSlideTop } from '../utils/scrollHelper';
@@ -17,38 +17,41 @@ import { scrollToSlideTop } from '../utils/scrollHelper';
  */
 interface SlideSoundConfig {
   situationImaginee: string;
+  ambianceLabel?: string;
+  fx1Label?: string;
+  fx2Label?: string;
 }
 
 const SLIDE_SOUND_CONFIG: Record<number, SlideSoundConfig> = {
   1: {
-    situationImaginee: "L'enfant est seul au bord de l'océan, face au vent et au ressac, bercé par le rêve lointain d'un moteur de karting.",
+    situationImaginee: "L'énergie du départ : le souffle du rallye, les rugissements des moteurs de course et le frisson des premiers bolides sur la piste.",
   },
   2: {
-    situationImaginee: "L'enfant est seul dans la cour de terre battue, assemblant son châssis en bois avec quelques planches et morceaux de corde, imitant lui-même le bruit du moteur.",
+    situationImaginee: "Rêve d'enfant et nature : le chant mélodieux des oiseaux, les chants dans la cour et l'écho lointain d'un moteur de rallye qui fait naître la vocation.",
   },
   3: {
-    situationImaginee: "Le contraste silencieux entre le calme de la tour d'architecture en hauteur et la poussière de la rue en contrebas.",
+    situationImaginee: "Immersion urbaine à Cotonou : rumeur de la ville, circulation animée, klaxons rythmés et passage des voitures dans les artères urbaines.",
   },
   4: {
-    situationImaginee: "L'ambiance feutrée et appliquée de la salle d'études, les tracés de crayons et les esquisses du circuit sur la table de dessin.",
+    situationImaginee: "Le studio d'études et d'ingénierie : l'écriture sur le papier calque, la frappe cadencée sur le clavier d'ordinateur et le souffle des postes de travail.",
   },
   5: {
-    situationImaginee: "L'activité sur le chantier de terrassement de la piste, le passage des engins et les préparatifs du tracé d'asphalte.",
+    situationImaginee: "Les essais dynamiques du complexe : tests de la maquette, passages vifs de rallye et rugissements de karting en pleine accélération sur le tracé.",
   },
   6: {
-    situationImaginee: "Le silence tendu et l'immense concentration sur la grille de départ avant que les feux ne s'allument.",
+    situationImaginee: "Montée en tension sur la pré-grille : le rugissement noble du lion emblématique mêlé aux grondements fauves des moteurs, courses et freinages.",
   },
   7: {
-    situationImaginee: "La vitesse sur la piste, les trajectoires au ras du bitume et les karts qui se disputent la corde.",
+    situationImaginee: "L'intensité pure de la course : freinages appuyés au point de corde sur les vibreurs, relances foudroyantes plein gaz et survol rasant du drone à pleine vitesse.",
   },
   8: {
-    situationImaginee: "La ferveur et les acclamations du public venu assister à la première grande course au Bénin.",
+    situationImaginee: "Atmosphère chaleureuse et populaire : liesse des tribunes, foule tranquille et gens qui crient, portés par le bruit du circuit au loin.",
   },
   9: {
-    situationImaginee: "Le calme qui retombe sur le circuit en fin de journée, les moteurs coupés et les regards tournés vers l'océan.",
+    situationImaginee: "Le triomphe et la transmission : foule conquise, salves d'applaudissements nourris et passage d'honneur du rallye sous les acclamations du public.",
   },
   10: {
-    situationImaginee: "L'échange serein et constructif autour de la maquette du projet et de la réalisation de la vidéo de présentation.",
+    situationImaginee: "L'ambiance feutrée du paddock officiel : concentration sur la télémétrie, un peu de rallye feutré aux stands et cadence sereine de l'organisation.",
   },
 };
 
@@ -194,10 +197,9 @@ export const GoBeyondSlideViewer: React.FC = () => {
   };
 
   const [activeFx, setActiveFx] = useState<number | null>(null);
-  const [downloadingUrl, setDownloadingUrl] = useState<string | null>(null);
 
   /**
-   * Préchargement immédiat en arrière-plan de toutes les images pour un affichage et un téléchargement instantanés
+   * Préchargement immédiat en arrière-plan de toutes les images pour un affichage instantané
    */
   useEffect(() => {
     const allUrls: string[] = [];
@@ -231,37 +233,6 @@ export const GoBeyondSlideViewer: React.FC = () => {
       img.src = src;
     });
   }, [currentSlideIndex]);
-
-  /**
-   * Téléchargement d'image HD rapide, direct et optimisé (Blob avec nom propre)
-   */
-  const handleDownloadImage = async (imgUrl: string, defaultName: string) => {
-    setDownloadingUrl(imgUrl);
-    try {
-      const res = await fetch(imgUrl);
-      const blob = await res.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      const cleanName = defaultName.replace(/[^a-zA-Z0-9_-]/g, '_');
-      link.download = cleanName.endsWith('.jpg') ? cleanName : `${cleanName}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1500);
-    } catch {
-      // Fallback lien direct
-      const link = document.createElement('a');
-      link.href = imgUrl;
-      link.download = defaultName;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } finally {
-      setTimeout(() => setDownloadingUrl(null), 1200);
-    }
-  };
 
   /**
    * Active ou met en pause l'ambiance sonore de la page courante (sans autoplay)
@@ -496,11 +467,11 @@ export const GoBeyondSlideViewer: React.FC = () => {
         </div>
 
         {/* =========================================================================
-            3. VISUELS DE LA PAGE AVEC TÉLÉCHARGEMENT HD RAPIDE & FLUIDE
+            3. VISUELS DE LA PAGE (SANS BOUTON DE TÉLÉCHARGEMENT)
             ========================================================================= */}
         <div>
           {currentSlide.type === 'cover' ? (
-            /* SLIDE 01 : GRAND VISUEL MAÎTRE DE COUVERTURE AVEC TÉLÉCHARGEMENT DIRECT */
+            /* SLIDE 01 : GRAND VISUEL MAÎTRE DE COUVERTURE */
             <div className="space-y-5">
               <div 
                 className="relative rounded-2xl overflow-hidden border border-white/20 bg-black shadow-2xl group"
@@ -522,37 +493,14 @@ export const GoBeyondSlideViewer: React.FC = () => {
                     }}
                     className="w-full h-full object-cover select-none"
                   />
-                  {/* Bouton Téléchargement HD rapide & facile */}
-                  <button
-                    type="button"
-                    onClick={() => handleDownloadImage(
-                      resolveImage(currentSlide.masterCoverImage || currentSlide.panels[0].image),
-                      'GoBeyond-Affiche-Maitre-16-9'
-                    )}
-                    className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-black/80 hover:bg-[#ff1e00] text-white border border-white/20 hover:border-[#ff1e00] text-xs font-mono font-bold flex items-center gap-1.5 shadow-xl backdrop-blur-md transition-all cursor-pointer z-10"
-                    title="Télécharger l'affiche master en haute résolution (16:9)"
-                  >
-                    {downloadingUrl === resolveImage(currentSlide.masterCoverImage || currentSlide.panels[0].image) ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Téléchargé !</span>
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Télécharger HD</span>
-                      </>
-                    )}
-                  </button>
                 </div>
               </div>
             </div>
           ) : (
-            /* SLIDES 02-10 : LES TROIS IMAGES FONDAMENTALES DU CHAPITRE AVEC TÉLÉCHARGEMENT */
+            /* SLIDES 02-10 : LES TROIS IMAGES FONDAMENTALES DU CHAPITRE */
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {currentSlide.panels.map((panel) => {
                 const resolvedSrc = resolveImage(panel.image);
-                const isDownloading = downloadingUrl === resolvedSrc;
                 return (
                   <div 
                     key={panel.id} 
@@ -574,25 +522,6 @@ export const GoBeyondSlideViewer: React.FC = () => {
                         }}
                         className="w-full h-full object-cover select-none"
                       />
-                      {/* Bouton Téléchargement HD rapide & fluide */}
-                      <button
-                        type="button"
-                        onClick={() => handleDownloadImage(resolvedSrc, `GoBeyond-Stand${currentSlide.slideNumber}-${panel.id}`)}
-                        className="absolute top-2 right-2 px-2.5 py-1 rounded-lg bg-black/85 hover:bg-[#ff1e00] text-white border border-white/20 hover:border-[#ff1e00] text-[11px] font-mono font-bold flex items-center gap-1.5 shadow-lg backdrop-blur-md transition-all cursor-pointer z-10 opacity-95 sm:opacity-85 sm:hover:opacity-100"
-                        title={`Télécharger cette image HD : ${panel.title}`}
-                      >
-                        {isDownloading ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-400" />
-                            <span className="text-[10px]">OK</span>
-                          </>
-                        ) : (
-                          <>
-                            <Download className="w-3 h-3 text-white" />
-                            <span className="text-[10px]">HD</span>
-                          </>
-                        )}
-                      </button>
                     </div>
 
                     <div className="p-3 bg-[#0d0f14] border-t border-white/10 text-left flex-1 flex flex-col justify-between">
@@ -620,10 +549,18 @@ export const GoBeyondSlideViewer: React.FC = () => {
             4. CONTENU ÉDITORIAL & SCÉNARISTIQUE
             ========================================================================= */}
         {currentSlide.type === 'budget' ? (
-          <PlanningBudgetSection />
+          <div className="space-y-6">
+            <ThreeEntriesBox
+              imageText={currentSlide.imageText || currentSlide.ecranText}
+              sensText={currentSlide.sensText || currentSlide.raconteText}
+              notreForceTitle={currentSlide.notreForceTitle}
+              notreForceText={currentSlide.notreForceText}
+            />
+            <PlanningBudgetSection />
+          </div>
         ) : currentSlide.pillars ? (
           <>
-            {/* SLIDE 01 : SECTION A : MANIFESTE « GO BEYOND » */}
+            {/* SLIDE 01 : SECTION A : MANIFESTE « GO BEYOND » (FOND NOIR) */}
             <div className="w-full rounded-2xl bg-[#090b0e] text-white p-4 sm:p-7 shadow-2xl border border-white/10 space-y-4">
               <div className="w-full border-b border-white/10 pb-4">
                 <h3 className="font-display italic font-black text-xl sm:text-2xl text-white tracking-tight uppercase text-left">
@@ -662,13 +599,21 @@ export const GoBeyondSlideViewer: React.FC = () => {
               </div>
             </div>
 
-            {/* SLIDE 01 : TRACÉ DU CIRCUIT & NAVIGATION PAR LES VERBES */}
+            {/* SLIDE 01 : ENCADRÉ « À L'IMAGE / LE SENS / NOTRE FORCE » SOUS LE MANIFESTE (FOND BLANC) */}
+            <ThreeEntriesBox
+              imageText={currentSlide.imageText || currentSlide.ecranText}
+              sensText={currentSlide.sensText || currentSlide.raconteText}
+              notreForceTitle={currentSlide.notreForceTitle}
+              notreForceText={currentSlide.notreForceText}
+            />
+
+            {/* SLIDE 01 : TRACÉ DU CIRCUIT & NAVIGATION PAR LES VERBES (FOND NOIR AVEC CIRCUIT DU BÉNIN) */}
             <CircuitNarrativeNavigator
               onSelectSlide={handleSelectSlide}
               currentSlideIndex={currentSlideIndex}
             />
 
-            {/* SLIDE 01 : SECTION B : LES QUATRE PILIERS DU RÉCIT */}
+            {/* SLIDE 01 : SECTION B : LES QUATRE PILIERS DU RÉCIT (FOND BLANC AVEC LES QUATRE PILIERS) */}
             <div className="w-full rounded-2xl bg-white text-neutral-900 p-5 sm:p-8 shadow-2xl border border-neutral-200">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-neutral-200 pb-3 mb-5">
                 <span className="font-mono text-xs text-[#ff1e00] font-bold uppercase tracking-widest">
@@ -715,55 +660,13 @@ export const GoBeyondSlideViewer: React.FC = () => {
             </div>
           </>
         ) : (
-          /* SLIDES 02-09 : FICHE SCRIPT CINÉMA SUR FOND BLANC */
-          <div className="rounded-2xl bg-white text-neutral-900 p-6 sm:p-8 shadow-2xl border border-neutral-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-sans text-xs">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-md bg-[#ff1e00]/10 text-[#ff1e00] flex items-center justify-center">
-                    <Film className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="font-mono text-[11px] text-[#ff1e00] font-bold uppercase tracking-wider block">
-                    À L'ÉCRAN
-                  </span>
-                </div>
-                <p className="text-neutral-700 leading-relaxed font-light">
-                  {currentSlide.ecranText}
-                </p>
-                <div className="h-0.5 w-8 bg-[#ff1e00] mt-2" />
-              </div>
-
-              <div className="space-y-2 border-t md:border-t-0 md:border-l border-neutral-200 pt-4 md:pt-0 md:pl-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-md bg-[#ff1e00]/10 text-[#ff1e00] flex items-center justify-center">
-                    <Mic className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="font-mono text-[11px] text-[#ff1e00] font-bold uppercase tracking-wider block">
-                    CE QUE ÇA RACONTE
-                  </span>
-                </div>
-                <p className="text-neutral-700 leading-relaxed font-light">
-                  {currentSlide.raconteText}
-                </p>
-                <div className="h-0.5 w-8 bg-[#ff1e00] mt-2" />
-              </div>
-
-              <div className="space-y-2 border-t md:border-t-0 md:border-l border-neutral-200 pt-4 md:pt-0 md:pl-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-md bg-[#ff1e00]/10 text-[#ff1e00] flex items-center justify-center">
-                    <Music className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="font-mono text-[11px] text-[#ff1e00] font-bold uppercase tracking-wider block">
-                    RYTHME &amp; SON
-                  </span>
-                </div>
-                <p className="text-neutral-700 leading-relaxed font-light">
-                  {currentSlide.rythmeSonText}
-                </p>
-                <div className="h-0.5 w-8 bg-[#ff1e00] mt-2" />
-              </div>
-            </div>
-          </div>
+          /* SLIDES 02-09 : ENCADRÉ « À L'IMAGE / LE SENS / NOTRE FORCE » SUR FOND BLANC */
+          <ThreeEntriesBox
+            imageText={currentSlide.imageText || currentSlide.ecranText}
+            sensText={currentSlide.sensText || currentSlide.raconteText}
+            notreForceTitle={currentSlide.notreForceTitle}
+            notreForceText={currentSlide.notreForceText}
+          />
         )}
 
         {/* =========================================================================
@@ -836,11 +739,12 @@ export const GoBeyondSlideViewer: React.FC = () => {
               <button
                 type="button"
                 onClick={handleToggleSound}
-                className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer border ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer border ${
                   audioState.isMusicPlaying && !audioState.isMuted
                     ? 'bg-[#ff1e00] text-white border-[#ff1e00] shadow-[0_0_15px_rgba(255,30,0,0.4)]'
                     : 'bg-white/10 hover:bg-white/20 text-neutral-200 border-white/15'
                 }`}
+                title={audioState.isMusicPlaying && !audioState.isMuted ? "Pause ambiance" : "Lancer l'ambiance"}
               >
                 {audioState.isMusicPlaying && !audioState.isMuted ? (
                   <>
@@ -872,12 +776,12 @@ export const GoBeyondSlideViewer: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleTriggerFx(1)}
-                className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
                   activeFx === 1
                     ? 'bg-[#ff1e00] text-white border-[#ff1e00] shadow-[0_0_15px_rgba(255,30,0,0.5)] scale-105'
                     : 'bg-white/5 hover:bg-[#ff1e00]/20 hover:border-[#ff1e00]/60 text-neutral-200 border-white/15'
                 }`}
-                title="Déclencher l'Effet 1"
+                title="Déclencher Effet 1"
               >
                 <Volume2 className={`w-3.5 h-3.5 ${activeFx === 1 ? 'animate-bounce text-white' : 'text-[#ff1e00]'}`} />
                 <span>Effet 1</span>
@@ -887,12 +791,12 @@ export const GoBeyondSlideViewer: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleTriggerFx(2)}
-                className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
                   activeFx === 2
                     ? 'bg-[#ff1e00] text-white border-[#ff1e00] shadow-[0_0_15px_rgba(255,30,0,0.5)] scale-105'
                     : 'bg-white/5 hover:bg-[#ff1e00]/20 hover:border-[#ff1e00]/60 text-neutral-200 border-white/15'
                 }`}
-                title="Déclencher l'Effet 2"
+                title="Déclencher Effet 2"
               >
                 <Volume2 className={`w-3.5 h-3.5 ${activeFx === 2 ? 'animate-bounce text-white' : 'text-[#ff1e00]'}`} />
                 <span>Effet 2</span>

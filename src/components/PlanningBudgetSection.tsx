@@ -315,11 +315,11 @@ export const PlanningBudgetSection: React.FC = () => {
         </div>
       </div>
 
-      {/* 6. PLANNING INDICATIF EN CIRCUIT VERTICAL & MODALITÉS DE RÈGLEMENT (SECTIONS 4 & 5 DU PDF) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* 6. PLANNING DE COURSE EN CIRCUIT & MODALITÉS DE RÈGLEMENT */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         
-        {/* Planning Indicatif — Le Grand Circuit Vertical des Semaines (Col 7) */}
-        <div className="lg:col-span-7">
+        {/* Planning de course — Le Circuit des Semaines (Col 7) */}
+        <div className="lg:col-span-7 flex flex-col">
           <VerticalCircuitCalendar />
         </div>
 

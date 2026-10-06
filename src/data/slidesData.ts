@@ -60,6 +60,10 @@ export interface SlideData {
     verbs: string;
     desc: string;
   }[];
+  imageText?: string;
+  sensText?: string;
+  notreForceTitle?: string;
+  notreForceText?: string;
   ecranText?: string;
   raconteText?: string;
   rythmeSonText?: string;
@@ -151,6 +155,10 @@ export const SLIDES: SlideData[] = [
     ],
     signatureKartText: "Le kart est toujours là, même quand on ne le voit pas. Il passe par la caméra, qui imite la conduite, et par le son, un moteur qu'on devine avant de le voir. Il gronde de plus en plus fort au fil du film.",
     filRougeSonoreText: "Un souffle d'enfant au début, un moteur lointain au milieu, un rugissement à la course, une dernière note tenue à la fin.",
+    imageText: "Une fresque introductive et cinématographique : du rêve originel d'un jeune garçon imaginant un circuit sur la terre rouge jusqu'à la vision spectaculaire du futur complexe international de karting au Bénin.",
+    sensText: "Le passage de l'étincelle individuelle à une ambition collective nationale. Le film affirme que le Bénin ne subit pas l'avenir : il le conçoit avec audace, exigence et fierté.",
+    notreForceTitle: "Donner vie au projet",
+    notreForceText: "Un film construit autour d’un scénario précis, pour présenter le projet, créer l’émotion et marquer les esprits.",
     audioKey: "01_reve"
   },
 
@@ -183,7 +191,11 @@ export const SLIDES: SlideData[] = [
         caption: "Assemblage du châssis en bois et direction"
       }
     ],
-    ecranText: "Cour de terre rouge, lumière rasante. La caméra descend à hauteur d'enfant : mains qui assemblent les planches, nouent la ficelle, ajustent les roues. Plans courts, le kart naît au montage. Travelling arrière : le kart terminé.",
+    imageText: "Cour de terre rouge, lumière rasante. La caméra descend à hauteur d'enfant : mains qui assemblent les planches, nouent la ficelle, ajustent les roues. Plans courts, le kart naît au montage. Travelling arrière : le kart artisanal terminé.",
+    sensText: "L'enfant n'attend pas qu'on lui offre un kart : il le fabrique. Le Bénin bâtit son karting avec ses idées, ses mains, sa volonté.",
+    notreForceTitle: "Révéler le Bénin",
+    notreForceText: "Notre expérience, notamment avec *Mon Beau Bénin*, nous permet de valoriser le territoire avec un regard local.",
+    ecranText: "Cour de terre rouge, lumière rasante. La caméra descend à hauteur d'enfant : mains qui assemblent les planches, nouent la ficelle, ajustent les roues. Plans courts, le kart naît au montage. Travelling arrière : le kart artisanal terminé.",
     raconteText: "L'enfant n'attend pas qu'on lui offre un kart : il le fabrique. Le Bénin bâtit son karting avec ses idées, ses mains, sa volonté.",
     rythmeSonText: "Calme, puis le montage s'accélère. Bois, ficelle, terre, et une mélodie simple.",
     signatureKartText: "Le kart n'existe encore que dans la tête de l'enfant. Les roues sifflent comme une accélération, les planches craquent comme un châssis. À la fin, un « vroum » murmuré : le premier moteur du film.",
@@ -220,6 +232,10 @@ export const SLIDES: SlideData[] = [
         caption: "L'architecte observe l'enfant depuis la tour"
       }
     ],
+    imageText: "Travelling au ras du sol, poussière, énergie joyeuse. Le kart bute, ralenti, l'enfant lève la tête. Contre-plongée : une silhouette derrière une vitre, au dernier étage. Plongée : l'enfant, minuscule, face à la ville. Deux mondes séparés par une vitre.",
+    sensText: "L'enfant se heurte à ses limites, puis croise quelqu'un qui comprend son projet. Le Bénin écoute ses habitants et réunit les talents pour répondre à leurs rêves. La vitre sépare, mais elle relie.",
+    notreForceTitle: "Produire depuis le Bénin",
+    notreForceText: "Repérages, casting, tournage et coordination peuvent être réalisés localement, avec une équipe disponible sur place.",
     ecranText: "Travelling au ras du sol, poussière, énergie joyeuse. Le kart bute, ralenti, l'enfant lève la tête. Contre-plongée : une silhouette derrière une vitre, au dernier étage. Plongée : l'enfant, minuscule, face à la ville. Deux mondes séparés par une vitre.",
     raconteText: "L'enfant se heurte à ses limites, puis croise quelqu'un qui comprend son projet. Le Bénin écoute ses habitants et réunit les talents pour répondre à leurs rêves. La vitre sépare, mais elle relie.",
     rythmeSonText: "Vif et bruyant, puis tout se suspend : le souffle de l'enfant, la rumeur de la ville.",
@@ -257,6 +273,10 @@ export const SLIDES: SlideData[] = [
         caption: "À Cotonou, l'architecte affine le plan 2D du circuit"
       }
     ],
+    imageText: "Par-dessus l'épaule : un carnet, un crayon, les courbes d'un circuit. Macro sur la mine. Un enchaîné fait passer le tracé du papier à l'écran. La conceptrice, face caméra, la ville derrière elle.",
+    sensText: "L'idée prend forme : un savoir-faire béninois, pensé ici, par des talents d'ici.",
+    notreForceTitle: "Respecter chaque détail",
+    notreForceText: "Chaque séquence s’appuie sur les plans du projet pour respecter ses volumes, ses lignes et ses espaces.",
     ecranText: "Par-dessus l'épaule : un carnet, un crayon, les courbes d'un circuit. Macro sur la mine. Un enchaîné fait passer le tracé du papier à l'écran. La conceptrice, face caméra, la ville derrière elle.",
     raconteText: "L'idée prend forme : un savoir-faire béninois, pensé ici, par des talents d'ici.",
     rythmeSonText: "Calme, précis. Crissement du crayon, clavier, nappe sonore légère.",
@@ -294,6 +314,10 @@ export const SLIDES: SlideData[] = [
         caption: "Le complexe international illuminé de nuit"
       }
     ],
+    imageText: "Le circuit sur l'écran, dézoom : la maquette sur le bureau, effet miniature. Une main pose un petit kart sur la piste. La maquette s'anime en 3D : survol du circuit, des bâtiments, des tribunes. Le petit kart fait écho à celui de bois.",
+    sensText: "Le rêve devient méthode : plans, modélisation, essais. On a changé d'échelle, pas d'esprit.",
+    notreForceTitle: "Valider avant de tourner",
+    notreForceText: "Les plans essentiels peuvent être prévisualisés pour valider en amont l’architecture, les mouvements et l’esthétique.",
     ecranText: "Le circuit sur l'écran, dézoom : la maquette sur le bureau, effet miniature. Une main pose un petit kart sur la piste. La maquette s'anime en 3D : survol du circuit, des bâtiments, des tribunes. Le petit kart fait écho à celui de bois.",
     raconteText: "Le rêve devient méthode : plans, modélisation, essais. On a changé d'échelle, pas d'esprit.",
     rythmeSonText: "Montage qui se resserre, percussions précises, premier grondement au loin.",
@@ -331,6 +355,10 @@ export const SLIDES: SlideData[] = [
         caption: "Les 5 feux rouges allumés sur la grille"
       }
     ],
+    imageText: "Très gros plans : gants, jugulaire, visière qui descend, harnais, mains sur le volant, numéro 7. Vue subjective, tribunes floues. Les cinq feux rouges s'allument sur la grille de départ.",
+    sensText: "Le Bénin est prêt : sérieux, sécurité, niveau international. Le frémissement d'un pays qui sent venir quelque chose de grand.",
+    notreForceTitle: "Donner une âme au son",
+    notreForceText: "Moteurs, accélérations, freinages, ambiance et musique sont conçus ensemble pour créer une véritable identité sonore.",
     ecranText: "Très gros plans : gants, jugulaire, visière qui descend, harnais, mains sur le volant, numéro 7. Vue subjective, tribunes floues. Rien ne roule encore.",
     raconteText: "Le Bénin est prêt : sérieux, sécurité, niveau international. Le frémissement d'un pays qui sent venir quelque chose de grand.",
     rythmeSonText: "Plans courts, tension maximale. Respiration, cliquetis, battement de cœur, puis un silence juste avant le départ.",
@@ -368,6 +396,10 @@ export const SLIDES: SlideData[] = [
         caption: "Duel roue dans roue entre le #07 et le #12"
       }
     ],
+    imageText: "Ligne de départ, deux karts côte à côte sous le portique « Le Bénin Terre d'Avenir ». Départ ! Caméra embarquée, ras du sol, travelling, plan aérien. Attaque du vibreur, duel roue dans roue et dépassement à pleine vitesse.",
+    sensText: "Les pilotes se dépassent, mais le vrai dépassement est celui du Bénin : il déjoue les attentes et rayonne à l'international.",
+    notreForceTitle: "Capturer le réel",
+    notreForceText: "Nous filmons de vrais pilotes, de vrais karts et de vraies actions pour capturer des mouvements authentiques.",
     ecranText: "Ligne de départ, deux karts côte à côte sous le portique « Le Bénin Terre d'Avenir ». Départ ! Caméra embarquée, ras du sol, travelling, plan aérien. Dépassement au ralenti, puis pleine vitesse. Drapeau à damier.",
     raconteText: "Les pilotes se dépassent, mais le vrai dépassement est celui du Bénin : il déjoue les attentes et rayonne à l'international.",
     rythmeSonText: "Le point culminant : coupes rapides, musique qui explose, moteurs, clameur du public.",
@@ -405,6 +437,10 @@ export const SLIDES: SlideData[] = [
         caption: "La foule en liesse acclame les bolides"
       }
     ],
+    imageText: "Plan aérien : de l'océan au soleil couchant, on survole le complexe. On descend à hauteur de visage : familles au grand portique, terrasses vivantes et clameur enthousiaste des tribunes.",
+    sensText: "Le karting devient un lieu qui attire le monde et donne envie de découvrir le pays : ses sites, sa mémoire, son histoire.",
+    notreForceTitle: "Faire vivre les espaces",
+    notreForceText: "Nous montrons les futurs usages du site : arrivées, déplacements, courses, tribunes, lumières et ambiance.",
     ecranText: "Plan aérien : de l'océan au soleil couchant, on survole le complexe. On descend à hauteur de visage : familles, enfants, professionnels du monde entier, mains levées, drapeaux.",
     raconteText: "Le karting devient un lieu qui attire le monde et donne envie de découvrir le pays : ses sites, sa mémoire, son histoire.",
     rythmeSonText: "Plus ample, plus ouvert : foule, percussions, voix. Une célébration.",
@@ -442,6 +478,10 @@ export const SLIDES: SlideData[] = [
         caption: "Vue aérienne du circuit le long de l'océan"
       }
     ],
+    imageText: "Champ-contrechamp : l'enfant, devenu pilote (casque n°12), face à la conceptrice (casque n°7). Remise du casque sur le podium, puis envolée de grue au soleil couchant révélant le tracé le long de l'océan. Titre : GO BEYOND.",
+    sensText: "L'une a transmis une idée, l'autre l'a vécue. Ce qui se transmet : courage, persévérance, résilience. Le peuple béninois s'élève, au-delà de toutes les limites.",
+    notreForceTitle: "Sublimer par l’IA",
+    notreForceText: "Nous transformons ces prises de vues en un environnement spectaculaire : circuit, public, infrastructures et paysages.",
     ecranText: "Champ-contrechamp : l'enfant, devenu pilote (casque n°12), face à la conceptrice (casque n°7). Podium symétrique, puis contre-plongée sur l'enfant, bras levés, au ralenti. Les trois pilotes réunis. La grue monte et révèle tout le site au coucher du soleil. Titre : GO BEYOND.",
     raconteText: "L'une a transmis une idée, l'autre l'a vécue. Ce qui se transmet : courage, persévérance, résilience. Le peuple béninois s'élève, au-delà de toutes les limites.",
     rythmeSonText: "On respire. La musique atteint son thème complet, puis un dernier silence avant le titre.",
@@ -479,6 +519,12 @@ export const SLIDES: SlideData[] = [
         caption: "Film cinématographique de commercialisation et d'investissement"
       }
     ],
+    imageText: "Dossier de production graphique et technique : exploitation rigoureuse des maquettes Revit & DWG, élévations 3D photoréalistes et livraison finale du master 4K UHD.",
+    sensText: "La rigueur de la méthode et la maîtrise technique au service de l'ambition : une proposition claire et transparente pour valoriser chaque investissement.",
+    notreForceTitle: "Faire rayonner le projet",
+    notreForceText: "Le film est conçu pour convaincre institutions, investisseurs, partenaires et public, au Bénin comme à l’international.",
+    ecranText: "Dossier de production graphique et technique : exploitation rigoureuse des maquettes Revit & DWG, élévations 3D photoréalistes et livraison finale du master 4K UHD.",
+    raconteText: "La rigueur de la méthode et la maîtrise technique au service de l'ambition : une proposition claire et transparente pour valoriser chaque investissement.",
     filRougeSonoreText: "Le grondement serein des moteurs au paddock après la course : précision technique, télémétrie et engagement officiel.",
     audioKey: "07_realite"
   }

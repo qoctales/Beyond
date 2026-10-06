@@ -44,10 +44,10 @@ class CinematicAudioSystem {
   private sfxGain: GainNode | null = null;
 
   // Channel volumes (0 to 1)
-  private masterVol = 0.85;
-  private musicVol = 0.75;
-  private ambienceVol = 0.70;
-  private sfxVol = 0.90;
+  private masterVol = 0.90;
+  private musicVol = 0.22;
+  private ambienceVol = 0.18;
+  private sfxVol = 0.92;
 
   private currentSection = "slide_1";
   private currentSlideNumber: number = 1;
@@ -60,6 +60,10 @@ class CinematicAudioSystem {
   private activeMusicGains: GainNode[] = [];
   private activeAmbienceNodes: AudioNode[] = [];
   private activeIntervals: number[] = [];
+
+  // Real recorded cuts audio players
+  private currentAmbianceAudio: HTMLAudioElement | null = null;
+  private currentFxAudio: HTMLAudioElement | null = null;
 
   constructor() {
     // Initialized upon first user interaction
@@ -257,6 +261,17 @@ class CinematicAudioSystem {
     this.isMusicPlaying = false;
     this.isPlayingRealisticFx = false;
     this.stopContinuousSounds();
+
+    if (this.currentFxAudio) {
+      try {
+        this.currentFxAudio.pause();
+        this.currentFxAudio.currentTime = 0;
+      } catch {
+        // Ignore
+      }
+      this.currentFxAudio = null;
+    }
+
     if (this.ctx && this.masterGain) {
       this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
     }
@@ -265,6 +280,12 @@ class CinematicAudioSystem {
 
   public setMasterVolume(val: number) {
     this.masterVol = Math.max(0, Math.min(1, val));
+    if (this.currentAmbianceAudio) {
+      this.currentAmbianceAudio.volume = Math.min(1, this.ambienceVol * this.masterVol);
+    }
+    if (this.currentFxAudio) {
+      this.currentFxAudio.volume = Math.min(1, this.sfxVol * this.masterVol);
+    }
     if (this.ctx && this.masterGain && !this.isMuted) {
       this.masterGain.gain.setValueAtTime(this.masterVol, this.ctx.currentTime);
     }
@@ -302,8 +323,16 @@ class CinematicAudioSystem {
     this.initAudio();
     if (!this.ctx) return;
 
-    // Smooth fade-out of previous continuous music
+    // Arrêt doux de la musique précédente
     this.stopContinuousSounds();
+
+    // Lance la composition d'ambiance procédurale douce, lancinante et tranquille demandée
+    this.playProceduralAmbience(slideNumber);
+  }
+
+  private playProceduralAmbience(slideNumber: number) {
+    this.initAudio();
+    if (!this.ctx) return;
 
     switch (slideNumber) {
       case 1:
@@ -422,9 +451,317 @@ class CinematicAudioSystem {
   }
 
   /**
-   * Déclenche un des deux effets sonores réalistes spécifiques à la page (superposé à l'ambiance)
+   * Chants d'enfants & mélodie innocente (inspiré des voix d'enfants enregistrées)
    */
+  private playChildrenVocalMelody(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    const notes = [
+      { f: 440, t: 0.05, d: 0.38 },
+      { f: 523.25, t: 0.45, d: 0.42 },
+      { f: 587.33, t: 0.90, d: 0.40 },
+      { f: 523.25, t: 1.35, d: 0.35 },
+      { f: 440, t: 1.75, d: 0.65 },
+      { f: 392, t: 2.45, d: 0.85 }
+    ];
+
+    notes.forEach((note) => {
+      const osc = this.ctx!.createOscillator();
+      const formant1 = this.ctx!.createBiquadFilter();
+      const formant2 = this.ctx!.createBiquadFilter();
+      const gain = this.ctx!.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(note.f, now + note.t);
+      osc.frequency.linearRampToValueAtTime(note.f + 4, now + note.t + note.d * 0.5);
+      osc.frequency.linearRampToValueAtTime(note.f, now + note.t + note.d);
+
+      formant1.type = "bandpass";
+      formant1.frequency.setValueAtTime(800, now + note.t);
+      formant1.Q.setValueAtTime(3.2, now + note.t);
+
+      formant2.type = "bandpass";
+      formant2.frequency.setValueAtTime(2200, now + note.t);
+      formant2.Q.setValueAtTime(3.5, now + note.t);
+
+      gain.gain.setValueAtTime(0.0001, now + note.t);
+      gain.gain.linearRampToValueAtTime(0.38, now + note.t + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + note.t + note.d);
+
+      osc.connect(formant1);
+      osc.connect(formant2);
+      formant1.connect(gain);
+      formant2.connect(gain);
+      gain.connect(this.sfxGain!);
+
+      osc.start(now + note.t);
+      osc.stop(now + note.t + note.d + 0.05);
+    });
+  }
+
+  /**
+   * Survol de drone cinématique (moteurs brushless multi-rotors + sifflement d'hélice aérien)
+   */
+  private playDroneFlightSwoosh(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    const rotor1 = this.ctx.createOscillator();
+    const rotor2 = this.ctx.createOscillator();
+    const airSwirl = this.createNoiseBufferNode(2.8);
+    const filter = this.ctx.createBiquadFilter();
+    const airFilter = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+    const airGain = this.ctx.createGain();
+
+    rotor1.type = "sawtooth";
+    rotor2.type = "triangle";
+
+    rotor1.frequency.setValueAtTime(185, now);
+    rotor1.frequency.exponentialRampToValueAtTime(295, now + 1.2);
+    rotor1.frequency.exponentialRampToValueAtTime(230, now + 2.7);
+
+    rotor2.frequency.setValueAtTime(370, now);
+    rotor2.frequency.exponentialRampToValueAtTime(590, now + 1.2);
+    rotor2.frequency.exponentialRampToValueAtTime(460, now + 2.7);
+
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(650, now);
+    filter.frequency.linearRampToValueAtTime(1800, now + 1.2);
+    filter.frequency.linearRampToValueAtTime(800, now + 2.7);
+    filter.Q.setValueAtTime(4.2, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.48, now + 0.9);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.8);
+
+    airFilter.type = "bandpass";
+    airFilter.frequency.setValueAtTime(1400, now);
+    airFilter.frequency.linearRampToValueAtTime(3400, now + 1.2);
+    airFilter.frequency.linearRampToValueAtTime(1200, now + 2.7);
+    airFilter.Q.setValueAtTime(2.2, now);
+
+    airGain.gain.setValueAtTime(0.0001, now);
+    airGain.gain.linearRampToValueAtTime(0.35, now + 1.0);
+    airGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.75);
+
+    rotor1.connect(filter);
+    rotor2.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    airSwirl.connect(airFilter);
+    airFilter.connect(airGain);
+    airGain.connect(this.sfxGain);
+
+    rotor1.start(now);
+    rotor2.start(now);
+    airSwirl.start(now);
+    rotor1.stop(now + 2.85);
+    rotor2.stop(now + 2.85);
+  }
+
+  /**
+   * Dessin et écriture d'architecte : crissement de crayon graphite sur papier vellum
+   */
+  private playPencilOnVellumSketch(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    [0.05, 0.42, 0.88, 1.35].forEach((t, i) => {
+      const stroke = this.createNoiseBufferNode(0.32);
+      const sFilter = this.ctx!.createBiquadFilter();
+      sFilter.type = "bandpass";
+      sFilter.frequency.setValueAtTime(1900 + i * 320, now + t);
+      sFilter.Q.setValueAtTime(4.2, now + t);
+      const sGain = this.ctx!.createGain();
+      sGain.gain.setValueAtTime(0.0001, now + t);
+      sGain.gain.linearRampToValueAtTime(0.55, now + t + 0.02);
+      sGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.28);
+
+      const tip = this.ctx!.createOscillator();
+      const tGain = this.ctx!.createGain();
+      tip.type = "triangle";
+      tip.frequency.setValueAtTime(2600 + (i % 2) * 400, now + t + 0.24);
+      tGain.gain.setValueAtTime(0.0001, now + t + 0.24);
+      tGain.gain.linearRampToValueAtTime(0.28, now + t + 0.25);
+      tGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.29);
+
+      stroke.connect(sFilter);
+      sFilter.connect(sGain);
+      sGain.connect(this.sfxGain!);
+      tip.connect(tGain);
+      tGain.connect(this.sfxGain!);
+
+      stroke.start(now + t);
+      tip.start(now + t + 0.24);
+      tip.stop(now + t + 0.30);
+    });
+  }
+
+  /**
+   * Respiration concentrée sous le casque & démarreur moteur 2-temps
+   */
+  private playHelmetBreathingAndStarter(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    const breathIn = this.createNoiseBufferNode(0.85);
+    const inFilter = this.ctx.createBiquadFilter();
+    inFilter.type = "bandpass";
+    inFilter.frequency.setValueAtTime(850, now);
+    inFilter.Q.setValueAtTime(2.2, now);
+    const inGain = this.ctx.createGain();
+    inGain.gain.setValueAtTime(0.0001, now);
+    inGain.gain.linearRampToValueAtTime(0.45, now + 0.4);
+    inGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+
+    breathIn.connect(inFilter);
+    inFilter.connect(inGain);
+    inGain.connect(this.sfxGain);
+    breathIn.start(now);
+
+    [0.15, 0.45, 0.95].forEach((t) => {
+      const pulse = this.ctx!.createOscillator();
+      const pGain = this.ctx!.createGain();
+      pulse.type = "sine";
+      pulse.frequency.setValueAtTime(50, now + t);
+      pulse.frequency.exponentialRampToValueAtTime(28, now + t + 0.18);
+      pGain.gain.setValueAtTime(0.0001, now + t);
+      pGain.gain.linearRampToValueAtTime(0.65, now + t + 0.02);
+      pGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.22);
+      pulse.connect(pGain);
+      pGain.connect(this.sfxGain!);
+      pulse.start(now + t);
+      pulse.stop(now + t + 0.24);
+    });
+
+    const visor = this.ctx.createOscillator();
+    const vGain = this.ctx.createGain();
+    visor.type = "triangle";
+    visor.frequency.setValueAtTime(1600, now + 1.1);
+    visor.frequency.exponentialRampToValueAtTime(260, now + 1.2);
+    vGain.gain.setValueAtTime(0.0001, now + 1.1);
+    vGain.gain.linearRampToValueAtTime(0.60, now + 1.12);
+    vGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.25);
+    visor.connect(vGain);
+    vGain.connect(this.sfxGain);
+    visor.start(now + 1.1);
+    visor.stop(now + 1.28);
+
+    const starterTime = now + 1.35;
+    [0.0, 0.08, 0.16, 0.24].forEach((t) => {
+      const crank = this.ctx!.createOscillator();
+      const cGain = this.ctx!.createGain();
+      crank.type = "sawtooth";
+      crank.frequency.setValueAtTime(180, starterTime + t);
+      cGain.gain.setValueAtTime(0.0001, starterTime + t);
+      cGain.gain.linearRampToValueAtTime(0.50, starterTime + t + 0.015);
+      cGain.gain.exponentialRampToValueAtTime(0.0001, starterTime + t + 0.07);
+      crank.connect(cGain);
+      cGain.connect(this.sfxGain!);
+      crank.start(starterTime + t);
+      crank.stop(starterTime + t + 0.08);
+    });
+
+    const idleTime = starterTime + 0.35;
+    const idle = this.ctx.createOscillator();
+    const iGain = this.ctx.createGain();
+    idle.type = "sawtooth";
+    idle.frequency.setValueAtTime(220, idleTime);
+    idle.frequency.exponentialRampToValueAtTime(380, idleTime + 0.4);
+    idle.frequency.exponentialRampToValueAtTime(240, idleTime + 1.2);
+    iGain.gain.setValueAtTime(0.0001, idleTime);
+    iGain.gain.linearRampToValueAtTime(0.52, idleTime + 0.1);
+    iGain.gain.exponentialRampToValueAtTime(0.0001, idleTime + 1.3);
+    idle.connect(iGain);
+    iGain.connect(this.sfxGain);
+    idle.start(idleTime);
+    idle.stop(idleTime + 1.35);
+  }
+
+  /**
+   * Clameur de la foule en liesse & sifflet de course
+   */
+  private playCrowdCheeringAndWhistle(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    const crowd = this.createNoiseBufferNode(2.9);
+    const cFilter = this.ctx.createBiquadFilter();
+    cFilter.type = "bandpass";
+    cFilter.frequency.setValueAtTime(950, now);
+    cFilter.frequency.linearRampToValueAtTime(1800, now + 0.8);
+    cFilter.frequency.linearRampToValueAtTime(850, now + 2.7);
+    cFilter.Q.setValueAtTime(1.8, now);
+    const cGain = this.ctx.createGain();
+    cGain.gain.setValueAtTime(0.0001, now);
+    cGain.gain.linearRampToValueAtTime(0.65, now + 0.4);
+    cGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.85);
+
+    crowd.connect(cFilter);
+    cFilter.connect(cGain);
+    cGain.connect(this.sfxGain);
+    crowd.start(now);
+
+    const whistleTime = now + 0.25;
+    const w1 = this.ctx.createOscillator();
+    const w2 = this.ctx.createOscillator();
+    const wGain = this.ctx.createGain();
+    w1.type = "sine";
+    w2.type = "sine";
+    w1.frequency.setValueAtTime(2850, whistleTime);
+    w2.frequency.setValueAtTime(2960, whistleTime);
+    wGain.gain.setValueAtTime(0.0001, whistleTime);
+    wGain.gain.linearRampToValueAtTime(0.48, whistleTime + 0.04);
+    wGain.gain.exponentialRampToValueAtTime(0.0001, whistleTime + 0.75);
+
+    w1.connect(wGain);
+    w2.connect(wGain);
+    wGain.connect(this.sfxGain);
+    w1.start(whistleTime);
+    w2.start(whistleTime);
+    w1.stop(whistleTime + 0.8);
+    w2.stop(whistleTime + 0.8);
+  }
+
+  /**
+    * Déclenche un des deux effets sonores réalistes spécifiques à la page (superposé à l'ambiance)
+    */
   public playSpecificFx(slideId: number, fxIndex: 1 | 2) {
+    this.isMuted = false;
+    this.isPlayingRealisticFx = true;
+    this.notify();
+
+    if (this.currentFxAudio) {
+      try {
+        this.currentFxAudio.pause();
+        this.currentFxAudio.currentTime = 0;
+      } catch {
+        // Ignore
+      }
+      this.currentFxAudio = null;
+    }
+
+    // 1. Play real audio cut from uploaded audio files
+    try {
+      const cutUrl = `/audio/cuts/slide${slideId}_fx${fxIndex}.mp3`;
+      const fxAudio = new Audio(cutUrl);
+      fxAudio.volume = Math.min(1, this.sfxVol * this.masterVol);
+      fxAudio.onended = () => {
+        this.isPlayingRealisticFx = false;
+        this.notify();
+      };
+      const p = fxAudio.play();
+      if (p) {
+        p.then(() => {
+          this.currentFxAudio = fxAudio;
+        }).catch(() => {
+          this.playProceduralSpecificFx(slideId, fxIndex);
+        });
+      } else {
+        this.currentFxAudio = fxAudio;
+      }
+      return;
+    } catch {
+      // Fallback
+    }
+
+    this.playProceduralSpecificFx(slideId, fxIndex);
+  }
+
+  private playProceduralSpecificFx(slideId: number, fxIndex: 1 | 2) {
     this.initAudio();
     if (!this.ctx || !this.sfxGain) return;
     if (this.ctx.state === "suspended") {
@@ -432,7 +769,6 @@ class CinematicAudioSystem {
     }
     
     // Réactivation immédiate des bus audio et annulation de sourdine
-    this.isMuted = false;
     const now = Math.max(this.ctx.currentTime, 0.05);
     if (this.masterGain) {
       this.masterGain.gain.cancelScheduledValues(now);
@@ -441,816 +777,104 @@ class CinematicAudioSystem {
     this.sfxGain.gain.cancelScheduledValues(now);
     this.sfxGain.gain.setValueAtTime(this.sfxVol, now);
 
-    this.isPlayingRealisticFx = true;
-    this.notify();
-
     switch (slideId) {
       case 1:
         if (fxIndex === 1) {
-          // 1.1 Ressac atlantique & grand rouleau océanique (Ouidah)
-          // Immense rouleau atlantique avec sub tellurique profond + résonance sweeping bandpass et embruns crépitants
-          const sub = this.ctx.createOscillator();
-          const subGain = this.ctx.createGain();
-          sub.type = "sine";
-          sub.frequency.setValueAtTime(36, now);
-          sub.frequency.exponentialRampToValueAtTime(54, now + 1.1);
-          sub.frequency.exponentialRampToValueAtTime(28, now + 2.7);
-          subGain.gain.setValueAtTime(0.0001, now);
-          subGain.gain.linearRampToValueAtTime(0.65, now + 1.0);
-          subGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.85);
-
-          const breaker = this.createNoiseBufferNode(3.2);
-          const bFilter = this.ctx.createBiquadFilter();
-          bFilter.type = "bandpass";
-          bFilter.frequency.setValueAtTime(160, now);
-          bFilter.frequency.exponentialRampToValueAtTime(1400, now + 1.2);
-          bFilter.frequency.exponentialRampToValueAtTime(180, now + 2.8);
-          bFilter.Q.setValueAtTime(3.0, now);
-          const bGain = this.ctx.createGain();
-          bGain.gain.setValueAtTime(0.0001, now);
-          bGain.gain.linearRampToValueAtTime(0.68, now + 1.15);
-          bGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.9);
-
-          const spray = this.createNoiseBufferNode(2.8);
-          const sFilter = this.ctx.createBiquadFilter();
-          sFilter.type = "highpass";
-          sFilter.frequency.setValueAtTime(2400, now + 0.8);
-          const sGain = this.ctx.createGain();
-          sGain.gain.setValueAtTime(0.0001, now + 0.8);
-          sGain.gain.linearRampToValueAtTime(0.42, now + 1.25);
-          sGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.7);
-
-          sub.connect(subGain);
-          subGain.connect(this.sfxGain);
-          breaker.connect(bFilter);
-          bFilter.connect(bGain);
-          bGain.connect(this.sfxGain);
-          spray.connect(sFilter);
-          sFilter.connect(sGain);
-          sGain.connect(this.sfxGain);
-
-          sub.start(now);
-          sub.stop(now + 2.9);
-          breaker.start(now);
-          spray.start(now + 0.8);
+          // 1.1 Sons de rallye & karting : Moteur 2-temps survolté plein gaz & passage Doppler
+          this.playRallyKartEngine(now, true);
         } else {
-          // 1.2 Kart au loin : Écho rugissant du 2-temps à travers les cocoteraies (synthèse double oscillateur comme la Page 7)
-          const osc1 = this.ctx.createOscillator();
-          const osc2 = this.ctx.createOscillator();
-          const filter = this.ctx.createBiquadFilter();
-          const gain = this.ctx.createGain();
-
-          osc1.type = "sawtooth";
-          osc2.type = "sawtooth";
-
-          // Rapport 1 puis 2 avec battement harmonique riche
-          osc1.frequency.setValueAtTime(290, now);
-          osc1.frequency.exponentialRampToValueAtTime(620, now + 0.95);
-          osc1.frequency.setValueAtTime(430, now + 1.0);
-          osc1.frequency.exponentialRampToValueAtTime(760, now + 2.2);
-
-          osc2.frequency.setValueAtTime(294, now);
-          osc2.frequency.exponentialRampToValueAtTime(627, now + 0.95);
-          osc2.frequency.setValueAtTime(434, now + 1.0);
-          osc2.frequency.exponentialRampToValueAtTime(767, now + 2.2);
-
-          filter.type = "lowpass";
-          filter.frequency.setValueAtTime(1100, now);
-          filter.frequency.linearRampToValueAtTime(2800, now + 1.5);
-          filter.frequency.linearRampToValueAtTime(950, now + 2.2);
-          filter.Q.setValueAtTime(3.5, now);
-
-          gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.58, now + 0.4);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.3);
-
-          osc1.connect(filter);
-          osc2.connect(filter);
-          filter.connect(gain);
-          gain.connect(this.sfxGain);
-
-          osc1.start(now);
-          osc2.start(now);
-          osc1.stop(now + 2.35);
-          osc2.stop(now + 2.35);
+          // 1.2 Bolide de rallye / voiture de course en accélération franche avec passage de vitesse
+          this.playRallyCarAcceleration(now);
         }
         break;
 
       case 2:
         if (fxIndex === 1) {
-          // 2.1 Façonnage du châssis en teck & tension de corde
-          // Frappes authentiques de menuiserie sur bois dur d'Afrique (transitoire d'impact + corps acoustique boisé accordé)
-          [0.05, 0.38, 0.72].forEach((t, i) => {
-            const tap = this.createNoiseBufferNode(0.04);
-            const tFilter = this.ctx!.createBiquadFilter();
-            tFilter.type = "bandpass";
-            tFilter.frequency.setValueAtTime(2400 + i * 300, now + t);
-            tFilter.Q.setValueAtTime(4.0, now + t);
-            const tGain = this.ctx!.createGain();
-            tGain.gain.setValueAtTime(0.0001, now + t);
-            tGain.gain.linearRampToValueAtTime(0.55, now + t + 0.004);
-            tGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.035);
-            tap.connect(tFilter);
-            tFilter.connect(tGain);
-            tGain.connect(this.sfxGain!);
-            tap.start(now + t);
-
-            const woodBody = this.ctx!.createOscillator();
-            const wGain = this.ctx!.createGain();
-            woodBody.type = "triangle";
-            woodBody.frequency.setValueAtTime(260 + i * 65, now + t);
-            woodBody.frequency.exponentialRampToValueAtTime(110, now + t + 0.12);
-            wGain.gain.setValueAtTime(0.0001, now + t);
-            wGain.gain.linearRampToValueAtTime(0.60, now + t + 0.008);
-            wGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.16);
-            woodBody.connect(wGain);
-            wGain.connect(this.sfxGain!);
-            woodBody.start(now + t);
-            woodBody.stop(now + t + 0.18);
-          });
-
-          // Tension grinçante et étirement tactile du cordage de direction
-          const rope = this.createNoiseBufferNode(0.7);
-          const rFilter = this.ctx.createBiquadFilter();
-          rFilter.type = "bandpass";
-          rFilter.frequency.setValueAtTime(1600, now + 0.8);
-          rFilter.Q.setValueAtTime(4.5, now + 0.8);
-          const rGain = this.ctx.createGain();
-          rGain.gain.setValueAtTime(0.0001, now + 0.8);
-          rGain.gain.linearRampToValueAtTime(0.48, now + 0.88);
-          rGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.4);
-          rope.connect(rFilter);
-          rFilter.connect(rGain);
-          rGain.connect(this.sfxGain);
-          rope.start(now + 0.8);
+          // 2.1 Chants d'enfants & oiseaux qui chantent dans la cour et la nature
+          this.playBirdSongAndKids(now);
         } else {
-          // 2.2 Roulage du kart artisanal sur la terre rouge (remplace le synthé vocal par la propulsion mécanique réelle)
-          // Les roulements à billes qui tournent et le châssis en bois qui vibre en prenant de la vitesse dans la cour
-          const spinOsc = this.ctx.createOscillator();
-          const spinFilter = this.ctx.createBiquadFilter();
-          const spinGain = this.ctx.createGain();
-          spinOsc.type = "sawtooth";
-          spinOsc.frequency.setValueAtTime(220, now);
-          spinOsc.frequency.exponentialRampToValueAtTime(680, now + 1.4);
-          spinFilter.type = "bandpass";
-          spinFilter.frequency.setValueAtTime(950, now);
-          spinFilter.frequency.linearRampToValueAtTime(2200, now + 1.4);
-          spinFilter.Q.setValueAtTime(3.8, now);
-          spinGain.gain.setValueAtTime(0.0001, now);
-          spinGain.gain.linearRampToValueAtTime(0.55, now + 0.25);
-          spinGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
-          spinOsc.connect(spinFilter);
-          spinFilter.connect(spinGain);
-          spinGain.connect(this.sfxGain);
-          spinOsc.start(now);
-          spinOsc.stop(now + 1.85);
-
-          // Grain de latérite et crissement sur le sol rouge
-          const dirt = this.createNoiseBufferNode(1.8);
-          const dFilter = this.ctx.createBiquadFilter();
-          dFilter.type = "bandpass";
-          dFilter.frequency.setValueAtTime(1100, now);
-          dFilter.frequency.linearRampToValueAtTime(1600, now + 0.8);
-          dFilter.Q.setValueAtTime(2.4, now);
-          const dGain = this.ctx.createGain();
-          dGain.gain.setValueAtTime(0.0001, now);
-          dGain.gain.linearRampToValueAtTime(0.50, now + 0.3);
-          dGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.75);
-          dirt.connect(dFilter);
-          dFilter.connect(dGain);
-          dGain.connect(this.sfxGain);
-          dirt.start(now);
-
-          // Battement sourd du châssis en bois qui sautille sur les aspérités
-          [0.12, 0.35, 0.58, 0.85, 1.15].forEach((t) => {
-            const bump = this.ctx!.createOscillator();
-            const bGain = this.ctx!.createGain();
-            bump.type = "triangle";
-            bump.frequency.setValueAtTime(140, now + t);
-            bump.frequency.exponentialRampToValueAtTime(55, now + t + 0.08);
-            bGain.gain.setValueAtTime(0.0001, now + t);
-            bGain.gain.linearRampToValueAtTime(0.45, now + t + 0.008);
-            bGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.09);
-            bump.connect(bGain);
-            bGain.connect(this.sfxGain!);
-            bump.start(now + t);
-            bump.stop(now + t + 0.1);
-          });
+          // 2.2 Un peu de rallye au loin qui fait rêver (grondement sourd feutré de kart dans la plaine)
+          this.playDistantRallyRumble(now);
         }
         break;
 
       case 3:
         if (fxIndex === 1) {
-          // 3.1 Roulements à billes métalliques à pleine vitesse
-          // Vrombissement supersonique de billes d'acier chromé dans la latérite (multi-harmonique avec résonance haute précision)
-          const bearingSpin1 = this.ctx.createOscillator();
-          const bearingSpin2 = this.ctx.createOscillator();
-          const bFilter = this.ctx.createBiquadFilter();
-          const bGain = this.ctx.createGain();
-
-          bearingSpin1.type = "sawtooth";
-          bearingSpin2.type = "triangle";
-          bearingSpin1.frequency.setValueAtTime(420, now);
-          bearingSpin1.frequency.exponentialRampToValueAtTime(1150, now + 1.2);
-          bearingSpin2.frequency.setValueAtTime(840, now);
-          bearingSpin2.frequency.exponentialRampToValueAtTime(2300, now + 1.2);
-
-          bFilter.type = "bandpass";
-          bFilter.frequency.setValueAtTime(1500, now);
-          bFilter.frequency.linearRampToValueAtTime(3200, now + 1.2);
-          bFilter.Q.setValueAtTime(3.8, now);
-
-          bGain.gain.setValueAtTime(0.0001, now);
-          bGain.gain.linearRampToValueAtTime(0.55, now + 0.2);
-          bGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.7);
-
-          bearingSpin1.connect(bFilter);
-          bearingSpin2.connect(bFilter);
-          bFilter.connect(bGain);
-          bGain.connect(this.sfxGain);
-
-          bearingSpin1.start(now);
-          bearingSpin2.start(now);
-          bearingSpin1.stop(now + 1.75);
-          bearingSpin2.stop(now + 1.75);
-
-          // 12 impacts métalliques ultra-rapides en cascade
-          [0.02, 0.08, 0.15, 0.23, 0.32, 0.42, 0.53, 0.65, 0.78, 0.92, 1.07, 1.23].forEach((t, i) => {
-            const ball = this.ctx!.createOscillator();
-            const bg = this.ctx!.createGain();
-            ball.type = "sine";
-            ball.frequency.setValueAtTime(1800 + (i % 4) * 440, now + t);
-            bg.gain.setValueAtTime(0.0001, now + t);
-            bg.gain.linearRampToValueAtTime(0.48, now + t + 0.006);
-            bg.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.065);
-            ball.connect(bg);
-            bg.connect(this.sfxGain!);
-            ball.start(now + t);
-            ball.stop(now + t + 0.075);
-          });
+          // 3.1 Dans la ville : Klaxons et circulation urbaine
+          this.playCityHornsAndTraffic(now);
         } else {
-          // 3.2 Glissade et dérapage contrôlé dans la poussière de latérite (remplace les applaudissements par le drift pur)
-          // Dérapage sec sur la terre rouge : friction tactile de la poussière + freinage d'urgence
-          const skid = this.createNoiseBufferNode(1.4);
-          const sFilter = this.ctx.createBiquadFilter();
-          sFilter.type = "bandpass";
-          sFilter.frequency.setValueAtTime(700, now);
-          sFilter.frequency.exponentialRampToValueAtTime(2400, now + 0.4);
-          sFilter.frequency.exponentialRampToValueAtTime(500, now + 1.1);
-          sFilter.Q.setValueAtTime(3.2, now);
-          const sGain = this.ctx.createGain();
-          sGain.gain.setValueAtTime(0.0001, now);
-          sGain.gain.linearRampToValueAtTime(0.62, now + 0.15);
-          sGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.3);
-          skid.connect(sFilter);
-          sFilter.connect(sGain);
-          sGain.connect(this.sfxGain);
-          skid.start(now);
-
-          // Gravillons rouges projetés contre le châssis en bois
-          [0.10, 0.18, 0.28, 0.40, 0.55, 0.72].forEach((t, i) => {
-            const grit = this.ctx!.createOscillator();
-            const gGain = this.ctx!.createGain();
-            grit.type = "triangle";
-            grit.frequency.setValueAtTime(620 + (i % 3) * 260, now + t);
-            grit.frequency.exponentialRampToValueAtTime(180, now + t + 0.04);
-            gGain.gain.setValueAtTime(0.0001, now + t);
-            gGain.gain.linearRampToValueAtTime(0.45, now + t + 0.005);
-            gGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.05);
-            grit.connect(gGain);
-            gGain.connect(this.sfxGain!);
-            grit.start(now + t);
-            grit.stop(now + t + 0.06);
-          });
+          // 3.2 Bruit urbain, passage des voitures & dynamisme de Cotonou
+          this.playCityUrbanAmbience(now);
         }
         break;
 
       case 4:
         if (fxIndex === 1) {
-          // 4.1 Fusain & tracé d'architecte : Friction nette, tactile et rythmée du crayon graphite sur vélin
-          [0.05, 0.42, 0.85].forEach((t, i) => {
-            const stroke = this.createNoiseBufferNode(0.35);
-            const sFilter = this.ctx!.createBiquadFilter();
-            sFilter.type = "bandpass";
-            sFilter.frequency.setValueAtTime(2100 + i * 360, now + t);
-            sFilter.Q.setValueAtTime(3.8, now + t);
-            const sGain = this.ctx!.createGain();
-            sGain.gain.setValueAtTime(0.0001, now + t);
-            sGain.gain.linearRampToValueAtTime(0.58, now + t + 0.02);
-            sGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.30);
-
-            // Petit clic sec du posé/levé de mine
-            const tip = this.ctx!.createOscillator();
-            const tGain = this.ctx!.createGain();
-            tip.type = "triangle";
-            tip.frequency.setValueAtTime(2800, now + t + 0.26);
-            tGain.gain.setValueAtTime(0.0001, now + t + 0.26);
-            tGain.gain.linearRampToValueAtTime(0.32, now + t + 0.27);
-            tGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.31);
-
-            stroke.connect(sFilter);
-            sFilter.connect(sGain);
-            sGain.connect(this.sfxGain!);
-            tip.connect(tGain);
-            tGain.connect(this.sfxGain!);
-
-            stroke.start(now + t);
-            tip.start(now + t + 0.26);
-            tip.stop(now + t + 0.32);
-          });
+          // 4.1 Écriture : Tracé au crayon graphite sur papier calque / table de dessin
+          this.playPencilWriting(now);
         } else {
-          // 4.2 Compas de précision & déroulement de calque : Tintement pur d'instrument de précision et frôlement soyeux
-          const chime = this.ctx.createOscillator();
-          const cGain = this.ctx.createGain();
-          chime.type = "sine";
-          chime.frequency.setValueAtTime(2240, now);
-          cGain.gain.setValueAtTime(0.0001, now);
-          cGain.gain.linearRampToValueAtTime(0.58, now + 0.015);
-          cGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.3);
-          chime.connect(cGain);
-          cGain.connect(this.sfxGain);
-          chime.start(now);
-          chime.stop(now + 1.35);
-
-          // Déroulement ample et net du rouleau de papier calque architectural
-          const paper = this.createNoiseBufferNode(1.2);
-          const pFilter = this.ctx.createBiquadFilter();
-          pFilter.type = "bandpass";
-          pFilter.frequency.setValueAtTime(1500, now + 0.12);
-          pFilter.frequency.linearRampToValueAtTime(2900, now + 0.7);
-          pFilter.Q.setValueAtTime(2.4, now + 0.12);
-          const pGain = this.ctx.createGain();
-          pGain.gain.setValueAtTime(0.0001, now + 0.12);
-          pGain.gain.linearRampToValueAtTime(0.50, now + 0.42);
-          pGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
-          paper.connect(pFilter);
-          pFilter.connect(pGain);
-          pGain.connect(this.sfxGain);
-          paper.start(now + 0.12);
+          // 4.2 Taper sur l'ordinateur : Clavier rythmé & bips informatiques de station CAO
+          this.playKeyboardAndComputer(now);
         }
         break;
 
       case 5:
         if (fxIndex === 1) {
-          // 5.1 Compacteur bitume : Frappe tellurique hydraulique lourde 42Hz + grondement de compactage
-          [0.05, 0.48, 0.92].forEach((t) => {
-            const heavyThud = this.ctx!.createOscillator();
-            const ironRattle = this.ctx!.createOscillator();
-            const gain = this.ctx!.createGain();
-
-            heavyThud.type = "triangle";
-            heavyThud.frequency.setValueAtTime(46, now + t);
-            heavyThud.frequency.exponentialRampToValueAtTime(26, now + t + 0.24);
-
-            ironRattle.type = "sawtooth";
-            ironRattle.frequency.setValueAtTime(170, now + t);
-            ironRattle.frequency.exponentialRampToValueAtTime(65, now + t + 0.18);
-
-            gain.gain.setValueAtTime(0.0001, now + t);
-            gain.gain.linearRampToValueAtTime(0.68, now + t + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.34);
-
-            heavyThud.connect(gain);
-            ironRattle.connect(gain);
-            gain.connect(this.sfxGain!);
-
-            heavyThud.start(now + t);
-            ironRattle.start(now + t);
-            heavyThud.stop(now + t + 0.36);
-            ironRattle.stop(now + t + 0.36);
-          });
+          // 5.1 Test de la maquette : Bolides de rallye & passages de karting en essai sur piste
+          this.playPrototypeTesting(now);
         } else {
-          // 5.2 Clé à chocs paddock : Rafale pneumatique CIK-FIA ultra-rapide (8 impacts secs) + détente d'air comprimé
-          [0.03, 0.08, 0.13, 0.18, 0.23, 0.28, 0.33, 0.38].forEach((t) => {
-            const hammer = this.ctx!.createOscillator();
-            const gain = this.ctx!.createGain();
-            hammer.type = "sawtooth";
-            hammer.frequency.setValueAtTime(680, now + t);
-            hammer.frequency.exponentialRampToValueAtTime(170, now + t + 0.035);
-
-            gain.gain.setValueAtTime(0.0001, now + t);
-            gain.gain.linearRampToValueAtTime(0.58, now + t + 0.006);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.045);
-
-            hammer.connect(gain);
-            gain.connect(this.sfxGain!);
-            hammer.start(now + t);
-            hammer.stop(now + t + 0.05);
-          });
-
-          // Pschitt pneumatique haute pression de fin de serrage
-          const airBlow = this.createNoiseBufferNode(0.55);
-          const aFilter = this.ctx.createBiquadFilter();
-          aFilter.type = "highpass";
-          aFilter.frequency.setValueAtTime(3400, now + 0.42);
-          const aGain = this.ctx.createGain();
-          aGain.gain.setValueAtTime(0.0001, now + 0.42);
-          aGain.gain.linearRampToValueAtTime(0.52, now + 0.45);
-          aGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
-          airBlow.connect(aFilter);
-          aFilter.connect(aGain);
-          aGain.connect(this.sfxGain);
-          airBlow.start(now + 0.42);
+          // 5.2 Complexe & ateliers : Bruits de karting et d'ingénierie en plein préparatifs
+          this.playComplexKartPaddock(now);
         }
         break;
 
       case 6:
         if (fxIndex === 1) {
-          // 6.1 Battement de cœur & verrouillage visière : Tension pure de la pré-grille (sub-bass 48Hz + CLAC de visière CIK-FIA)
-          [0.05, 0.28].forEach((t, i) => {
-            const pulse = this.ctx!.createOscillator();
-            const pGain = this.ctx!.createGain();
-            pulse.type = "sine";
-            pulse.frequency.setValueAtTime(i === 0 ? 54 : 44, now + t);
-            pulse.frequency.exponentialRampToValueAtTime(28, now + t + 0.16);
-            pGain.gain.setValueAtTime(0.0001, now + t);
-            pGain.gain.linearRampToValueAtTime(0.70, now + t + 0.02);
-            pGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.22);
-            pulse.connect(pGain);
-            pGain.connect(this.sfxGain!);
-            pulse.start(now + t);
-            pulse.stop(now + t + 0.24);
-          });
-
-          // Enclenchement mécanique sec et hermétique de la visière du casque
-          const visor = this.ctx.createOscillator();
-          const vGain = this.ctx.createGain();
-          visor.type = "triangle";
-          visor.frequency.setValueAtTime(1750, now + 0.65);
-          visor.frequency.exponentialRampToValueAtTime(280, now + 0.74);
-          vGain.gain.setValueAtTime(0.0001, now + 0.65);
-          vGain.gain.linearRampToValueAtTime(0.65, now + 0.67);
-          vGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.82);
-          visor.connect(vGain);
-          vGain.connect(this.sfxGain);
-          visor.start(now + 0.65);
-          visor.stop(now + 0.85);
+          // 6.1 Le Lion emblématique & rugissements puissants des moteurs
+          this.playLionRoarAndEngine(now);
         } else {
-          // 6.2 5 Feux de départ FIA & impulsion vert : Bips électroniques d'allumage des 5 feux rouges, pause insoutenable, et RUGISSEMENT DÉPART VERT
-          [1, 2, 3, 4, 5].forEach((lightNum, i) => {
-            const lightTime = now + i * 0.32;
-            const beep = this.ctx!.createOscillator();
-            const bGain = this.ctx!.createGain();
-            beep.type = "triangle";
-            beep.frequency.setValueAtTime(600 + lightNum * 70, lightTime);
-            bGain.gain.setValueAtTime(0.0001, lightTime);
-            bGain.gain.linearRampToValueAtTime(0.60, lightTime + 0.015);
-            bGain.gain.exponentialRampToValueAtTime(0.0001, lightTime + 0.18);
-            beep.connect(bGain);
-            bGain.connect(this.sfxGain!);
-            beep.start(lightTime);
-            beep.stop(lightTime + 0.2);
-          });
-
-          // Extinction des feux & GO DÉPART VERT !
-          const goTime = now + 5 * 0.32 + 0.35;
-          const goTone = this.ctx.createOscillator();
-          const goGain = this.ctx.createGain();
-          goTone.type = "sine";
-          goTone.frequency.setValueAtTime(1300, goTime);
-          goGain.gain.setValueAtTime(0.0001, goTime);
-          goGain.gain.linearRampToValueAtTime(0.65, goTime + 0.02);
-          goGain.gain.exponentialRampToValueAtTime(0.0001, goTime + 0.85);
-          goTone.connect(goGain);
-          goGain.connect(this.sfxGain);
-          goTone.start(goTime);
-          goTone.stop(goTime + 0.9);
-
-          // Rugissement surpuissant du kart qui bondit de la grille
-          const launchRoar = this.ctx.createOscillator();
-          const lrGain = this.ctx.createGain();
-          launchRoar.type = "sawtooth";
-          launchRoar.frequency.setValueAtTime(150, goTime);
-          launchRoar.frequency.exponentialRampToValueAtTime(720, goTime + 0.9);
-          lrGain.gain.setValueAtTime(0.0001, goTime);
-          lrGain.gain.linearRampToValueAtTime(0.62, goTime + 0.1);
-          lrGain.gain.exponentialRampToValueAtTime(0.0001, goTime + 1.1);
-          launchRoar.connect(lrGain);
-          lrGain.connect(this.sfxGain);
-          launchRoar.start(goTime);
-          launchRoar.stop(goTime + 1.15);
+          // 6.2 Courses, freinages violents et montées en régime féroces sur la pré-grille
+          this.playPreGridBraking(now);
         }
         break;
 
       case 7:
         if (fxIndex === 1) {
-          // 7.1 Moteur 2-temps 14 000 tr/min (accélération féroce & passage de rapport ultra-rapide - LE MODÈLE DE RÉFÉRENCE ABSOLU)
-          const osc1 = this.ctx.createOscillator();
-          const osc2 = this.ctx.createOscillator();
-          const filter = this.ctx.createBiquadFilter();
-          const gain = this.ctx.createGain();
-
-          osc1.type = "sawtooth";
-          osc2.type = "sawtooth";
-
-          // Montée 1er rapport
-          osc1.frequency.setValueAtTime(280, now);
-          osc1.frequency.exponentialRampToValueAtTime(680, now + 0.85);
-          // Passage 2nd rapport instantané
-          osc1.frequency.setValueAtTime(460, now + 0.9);
-          osc1.frequency.exponentialRampToValueAtTime(840, now + 2.1);
-
-          osc2.frequency.setValueAtTime(284, now);
-          osc2.frequency.exponentialRampToValueAtTime(686, now + 0.85);
-          osc2.frequency.setValueAtTime(464, now + 0.9);
-          osc2.frequency.exponentialRampToValueAtTime(846, now + 2.1);
-
-          filter.type = "lowpass";
-          filter.frequency.setValueAtTime(1500, now);
-          filter.frequency.linearRampToValueAtTime(3600, now + 2.1);
-          filter.Q.setValueAtTime(3.5, now);
-
-          gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.55, now + 0.2);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
-
-          osc1.connect(filter);
-          osc2.connect(filter);
-          filter.connect(gain);
-          gain.connect(this.sfxGain);
-
-          osc1.start(now);
-          osc2.start(now);
-          osc1.stop(now + 2.25);
-          osc2.stop(now + 2.25);
+          // 7.1 Gros freinage crissant sur l'asphalte et claquements secs sur le vibreur
+          this.playHardBrakeScreech(now);
         } else {
-          // 7.2 Doppler & vibreur FIA (passage rasoir à pleine vitesse + clac-clac du vibreur - LE MODÈLE DE RÉFÉRENCE ABSOLU)
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = "sawtooth";
-          osc.frequency.setValueAtTime(860, now);
-          osc.frequency.exponentialRampToValueAtTime(190, now + 1.1);
-
-          gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.55, now + 0.35);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.35);
-
-          osc.connect(gain);
-          gain.connect(this.sfxGain);
-          osc.start(now);
-          osc.stop(now + 1.4);
-
-          // Clac-clac-clac sur les cannelures du vibreur
-          [0.22, 0.29, 0.36, 0.43, 0.50, 0.57].forEach((t) => {
-            const kerb = this.ctx!.createOscillator();
-            const kGain = this.ctx!.createGain();
-            kerb.type = "triangle";
-            kerb.frequency.setValueAtTime(290, now + t);
-            kGain.gain.setValueAtTime(0.0001, now + t);
-            kGain.gain.linearRampToValueAtTime(0.42, now + t + 0.008);
-            kGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.05);
-            kerb.connect(kGain);
-            kGain.connect(this.sfxGain!);
-            kerb.start(now + t);
-            kerb.stop(now + t + 0.06);
-          });
+          // 7.2 Accélération foudroyante & survol ultra-rapide de drone FPV
+          this.playKartAccelerationAndDrone(now);
         }
         break;
 
       case 8:
         if (fxIndex === 1) {
-          // 8.1 Fanfare de victoire, clameur des tribunes & passage victorieux
-          // Ovation immense du stade + sonnerie triomphale de cuivres + passage kart victorieux 2-temps
-          const crowd = this.createNoiseBufferNode(3.0);
-          const cFilter = this.ctx.createBiquadFilter();
-          cFilter.type = "bandpass";
-          cFilter.frequency.setValueAtTime(800, now);
-          cFilter.frequency.linearRampToValueAtTime(1400, now + 1.2);
-          cFilter.Q.setValueAtTime(1.8, now);
-          const cGain = this.ctx.createGain();
-          cGain.gain.setValueAtTime(0.0001, now);
-          cGain.gain.linearRampToValueAtTime(0.62, now + 0.6);
-          cGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.85);
-
-          // Fanfare triomphale de cuivres héraldiques (Do4 -> Mi4 -> Sol4 -> Do5)
-          [
-            { f: 261.63, t: 0.1 },
-            { f: 329.63, t: 0.35 },
-            { f: 392.00, t: 0.60 },
-            { f: 523.25, t: 0.90 }
-          ].forEach((note) => {
-            const horn = this.ctx!.createOscillator();
-            const hFilter = this.ctx!.createBiquadFilter();
-            const hGain = this.ctx!.createGain();
-
-            horn.type = "sawtooth";
-            horn.frequency.setValueAtTime(note.f, now + note.t);
-
-            hFilter.type = "lowpass";
-            hFilter.frequency.setValueAtTime(note.f * 4.5, now + note.t);
-            hFilter.Q.setValueAtTime(2.8, now + note.t);
-
-            hGain.gain.setValueAtTime(0.0001, now + note.t);
-            hGain.gain.linearRampToValueAtTime(0.52, now + note.t + 0.04);
-            hGain.gain.exponentialRampToValueAtTime(0.0001, now + note.t + 1.25);
-
-            horn.connect(hFilter);
-            hFilter.connect(hGain);
-            hGain.connect(this.sfxGain!);
-
-            horn.start(now + note.t);
-            horn.stop(now + note.t + 1.3);
-          });
-
-          // Rugissement du kart victorieux qui franchit la ligne d'arrivée
-          const winKart = this.ctx.createOscillator();
-          const wkGain = this.ctx.createGain();
-          winKart.type = "sawtooth";
-          winKart.frequency.setValueAtTime(750, now + 0.8);
-          winKart.frequency.exponentialRampToValueAtTime(260, now + 2.2);
-          wkGain.gain.setValueAtTime(0.0001, now + 0.8);
-          wkGain.gain.linearRampToValueAtTime(0.50, now + 1.2);
-          wkGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.4);
-          winKart.connect(wkGain);
-          wkGain.connect(this.sfxGain);
-          winKart.start(now + 0.8);
-          winKart.stop(now + 2.45);
-
-          crowd.connect(cFilter);
-          cFilter.connect(cGain);
-          cGain.connect(this.sfxGain);
-          crowd.start(now);
+          // 8.1 Ambiance tranquille : Les gens qui crient, clameur de la foule chaleureuse
+          this.playCrowdCheerRelaxed(now);
         } else {
-          // 8.2 Tambours & polyrythmie béninoise : Tambour d'aisselle Tama (pitch bend authentique) + cloche double Gankogui
-          // 1. Frappes de cloche en fer traditionnelle Gankogui
-          [0.05, 0.28, 0.52, 0.76, 1.00, 1.24].forEach((t, i) => {
-            const bell = this.ctx!.createOscillator();
-            const bGain = this.ctx!.createGain();
-            bell.type = "triangle";
-            bell.frequency.setValueAtTime(i % 2 === 0 ? 880 : 1320, now + t);
-            bGain.gain.setValueAtTime(0.0001, now + t);
-            bGain.gain.linearRampToValueAtTime(0.48, now + t + 0.006);
-            bGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.09);
-            bell.connect(bGain);
-            bGain.connect(this.sfxGain!);
-            bell.start(now + t);
-            bell.stop(now + t + 0.1);
-          });
-
-          // 2. Frappes royales de tambour parlant avec pitch-bend vigoureux
-          [0.08, 0.32, 0.58, 0.84, 1.10, 1.38].forEach((t, i) => {
-            const drum = this.ctx!.createOscillator();
-            const dGain = this.ctx!.createGain();
-            drum.type = "sine";
-            const basePitch = i % 2 === 0 ? 120 : 155;
-            drum.frequency.setValueAtTime(basePitch, now + t);
-            drum.frequency.exponentialRampToValueAtTime(basePitch * 1.85, now + t + 0.16);
-
-            dGain.gain.setValueAtTime(0.0001, now + t);
-            dGain.gain.linearRampToValueAtTime(0.68, now + t + 0.015);
-            dGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.24);
-
-            drum.connect(dGain);
-            dGain.connect(this.sfxGain!);
-            drum.start(now + t);
-            drum.stop(now + t + 0.26);
-          });
+          // 8.2 Au loin le bruit du circuit de karting en écho feutré
+          this.playDistantCircuitEcho(now);
         }
         break;
 
       case 9:
         if (fxIndex === 1) {
-          // 9.1 Coupure contact & cliquetis métal chaud : Décélération moteur 520Hz -> ralenti, coupure allumage nette & clics de contraction thermique
-          const engine = this.ctx.createOscillator();
-          const eFilter = this.ctx.createBiquadFilter();
-          const eGain = this.ctx.createGain();
-
-          engine.type = "sawtooth";
-          engine.frequency.setValueAtTime(540, now);
-          engine.frequency.exponentialRampToValueAtTime(95, now + 0.95);
-
-          eFilter.type = "lowpass";
-          eFilter.frequency.setValueAtTime(1400, now);
-          eFilter.frequency.exponentialRampToValueAtTime(320, now + 0.95);
-
-          eGain.gain.setValueAtTime(0.0001, now);
-          eGain.gain.linearRampToValueAtTime(0.60, now + 0.04);
-          eGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.0);
-
-          engine.connect(eFilter);
-          eFilter.connect(eGain);
-          eGain.connect(this.sfxGain);
-          engine.start(now);
-          engine.stop(now + 1.05);
-
-          // Clics métalliques de refroidissement du pot d'échappement dans l'air marin
-          [1.08, 1.38, 1.72, 2.08, 2.45, 2.80].forEach((t, i) => {
-            const ping = this.ctx!.createOscillator();
-            const pGain = this.ctx!.createGain();
-            ping.type = "triangle";
-            ping.frequency.setValueAtTime(2750 + (i % 3) * 420, now + t);
-            pGain.gain.setValueAtTime(0.0001, now + t);
-            pGain.gain.linearRampToValueAtTime(0.44, now + t + 0.006);
-            pGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.065);
-
-            ping.connect(pGain);
-            pGain.connect(this.sfxGain!);
-            ping.start(now + t);
-            ping.stop(now + t + 0.075);
-          });
+          // 9.1 La foule & salves d'applaudissements nourris
+          this.playCrowdApplause(now);
         } else {
-          // 9.2 Vœu face à l'océan : Immense élévation cinématique crépusculaire (violoncelle profond 55Hz + accord Ré Majeur 9ème & brise dorée)
-          const seaBreeze = this.createNoiseBufferNode(3.0);
-          const sFilter = this.ctx.createBiquadFilter();
-          sFilter.type = "lowpass";
-          sFilter.frequency.setValueAtTime(650, now);
-          const sGain = this.ctx.createGain();
-          sGain.gain.setValueAtTime(0.0001, now);
-          sGain.gain.linearRampToValueAtTime(0.48, now + 0.7);
-          sGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.85);
-
-          // Basse noble de violoncelle (55Hz Ré1)
-          const bass = this.ctx.createOscillator();
-          const bGain = this.ctx.createGain();
-          bass.type = "sawtooth";
-          bass.frequency.setValueAtTime(55, now);
-          bGain.gain.setValueAtTime(0.0001, now);
-          bGain.gain.linearRampToValueAtTime(0.40, now + 0.4);
-          bGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.8);
-          bass.connect(bGain);
-          bGain.connect(this.sfxGain);
-          bass.start(now);
-          bass.stop(now + 2.85);
-
-          // Accord crépusculaire doré noble (Ré Majeur 9ème : Ré3, Fa#3, La3, Do#4, Mi4)
-          [146.83, 185.00, 220.00, 277.18, 329.63].forEach((freq) => {
-            const pad = this.ctx!.createOscillator();
-            const pGain = this.ctx!.createGain();
-            pad.type = "sine";
-            pad.frequency.setValueAtTime(freq, now + 0.1);
-            pGain.gain.setValueAtTime(0.0001, now + 0.1);
-            pGain.gain.linearRampToValueAtTime(0.28, now + 0.8);
-            pGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.7);
-
-            pad.connect(pGain);
-            pGain.connect(this.sfxGain!);
-            pad.start(now + 0.1);
-            pad.stop(now + 2.8);
-          });
-
-          seaBreeze.connect(sFilter);
-          sFilter.connect(sGain);
-          sGain.connect(this.sfxGain);
-          seaBreeze.start(now);
+          // 9.2 Le rallye sous les acclamations et applaudissements de la foule
+          this.playRallyWithApplause(now);
         }
         break;
 
       case 10:
         if (fxIndex === 1) {
-          // 10.1 Télémétrie en direct : Impulsions radar haute fréquence & balayages de flux data du paddock
-          [0.04, 0.20, 0.38, 0.56, 0.74, 0.94].forEach((t, i) => {
-            const ping1 = this.ctx!.createOscillator();
-            const ping2 = this.ctx!.createOscillator();
-            const pGain = this.ctx!.createGain();
-
-            ping1.type = "sine";
-            ping1.frequency.setValueAtTime(1480 + (i % 3) * 520, now + t);
-            ping2.type = "triangle";
-            ping2.frequency.setValueAtTime(2960 + (i % 3) * 1040, now + t);
-
-            pGain.gain.setValueAtTime(0.0001, now + t);
-            pGain.gain.linearRampToValueAtTime(0.52, now + t + 0.008);
-            pGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.08);
-
-            ping1.connect(pGain);
-            ping2.connect(pGain);
-            pGain.connect(this.sfxGain!);
-
-            ping1.start(now + t);
-            ping2.start(now + t);
-            ping1.stop(now + t + 0.09);
-            ping2.stop(now + t + 0.09);
-          });
+          // 10.1 Paddock officiel : Un peu de rallye feutré au ralenti dans les stands
+          this.playQuietPaddockKart(now);
         } else {
-          // 10.2 Validation officielle & confirmation de prestige : Scellement acoustique officiel du projet
-          const sealImpact = this.ctx.createOscillator();
-          const siGain = this.ctx.createGain();
-          sealImpact.type = "triangle";
-          sealImpact.frequency.setValueAtTime(120, now);
-          sealImpact.frequency.exponentialRampToValueAtTime(45, now + 0.12);
-          siGain.gain.setValueAtTime(0.0001, now);
-          siGain.gain.linearRampToValueAtTime(0.55, now + 0.01);
-          siGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
-          sealImpact.connect(siGain);
-          siGain.connect(this.sfxGain);
-          sealImpact.start(now);
-          sealImpact.stop(now + 0.2);
-
-          // Accord solennel de validation officielle (Do Majeur triomphant : Do4, Mi4, Sol4, Do5)
-          [261.63, 329.63, 392.00, 523.25].forEach((freq, idx) => {
-            const chime = this.ctx!.createOscillator();
-            const cGain = this.ctx!.createGain();
-            chime.type = "triangle";
-            chime.frequency.setValueAtTime(freq, now + 0.2 + idx * 0.05);
-            cGain.gain.setValueAtTime(0.0001, now + 0.2 + idx * 0.05);
-            cGain.gain.linearRampToValueAtTime(0.48, now + 0.3 + idx * 0.05);
-            cGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5);
-
-            chime.connect(cGain);
-            cGain.connect(this.sfxGain!);
-            chime.start(now + 0.2 + idx * 0.05);
-            chime.stop(now + 2.55);
-          });
+          // 10.2 Ambiance paddock feutrée & signaux de chronométrage officiel
+          this.playPaddockTelemetryOfficial(now);
         }
         break;
     }
@@ -1259,6 +883,516 @@ class CinematicAudioSystem {
       this.isPlayingRealisticFx = false;
       this.notify();
     }, 3200);
+  }
+
+  // --- NOUVEAUX GÉNÉRATEURS SONORES PROCÉDURAUX RÉALISTES POUR CHAQUE PAGE ---
+
+  /** 1.1 Son de rallye & karting 2-temps plein gaz */
+  private playRallyKartEngine(now: number, isKart: boolean = true) {
+    if (!this.ctx || !this.sfxGain) return;
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+    const filter = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+
+    osc1.type = "sawtooth";
+    osc2.type = "sawtooth";
+    const baseFreq = isKart ? 280 : 210;
+    osc1.frequency.setValueAtTime(baseFreq, now);
+    osc1.frequency.exponentialRampToValueAtTime(baseFreq * 2.8, now + 1.2);
+    osc1.frequency.exponentialRampToValueAtTime(baseFreq * 1.4, now + 2.0);
+
+    osc2.frequency.setValueAtTime(baseFreq * 1.02, now);
+    osc2.frequency.exponentialRampToValueAtTime(baseFreq * 2.85, now + 1.2);
+    osc2.frequency.exponentialRampToValueAtTime(baseFreq * 1.42, now + 2.0);
+
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(1400, now);
+    filter.frequency.linearRampToValueAtTime(3800, now + 1.2);
+    filter.frequency.exponentialRampToValueAtTime(1200, now + 2.1);
+    filter.Q.setValueAtTime(3.2, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.65, now + 0.25);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now + 2.25);
+    osc2.stop(now + 2.25);
+  }
+
+  /** 1.2 Bolide de rallye / voiture de course en accélération franche */
+  private playRallyCarAcceleration(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    const osc = this.ctx.createOscillator();
+    const sub = this.ctx.createOscillator();
+    const filter = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+
+    osc.type = "sawtooth";
+    sub.type = "triangle";
+
+    // Rapport 1
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(360, now + 0.9);
+    // Coupure passage rapport 2
+    osc.frequency.setValueAtTime(240, now + 0.96);
+    osc.frequency.exponentialRampToValueAtTime(520, now + 2.1);
+
+    sub.frequency.setValueAtTime(70, now);
+    sub.frequency.exponentialRampToValueAtTime(180, now + 0.9);
+    sub.frequency.setValueAtTime(120, now + 0.96);
+    sub.frequency.exponentialRampToValueAtTime(260, now + 2.1);
+
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(800, now);
+    filter.frequency.linearRampToValueAtTime(2800, now + 2.1);
+    filter.Q.setValueAtTime(2.5, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.68, now + 0.2);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.25);
+
+    osc.connect(filter);
+    sub.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start(now);
+    sub.start(now);
+    osc.stop(now + 2.3);
+    sub.stop(now + 2.3);
+  }
+
+  /** 2.1 Chants d'enfants & oiseaux qui chantent */
+  private playBirdSongAndKids(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    // Gazouillis d'oiseaux cristallins
+    [
+      { f1: 2600, f2: 3400, t: 0.05, d: 0.12 },
+      { f1: 3100, f2: 2400, t: 0.22, d: 0.15 },
+      { f1: 2800, f2: 3600, t: 0.55, d: 0.14 },
+      { f1: 3500, f2: 2900, t: 0.75, d: 0.12 },
+      { f1: 2700, f2: 3300, t: 1.10, d: 0.16 },
+    ].forEach((bird) => {
+      const bOsc = this.ctx!.createOscillator();
+      const bGain = this.ctx!.createGain();
+      bOsc.type = "sine";
+      bOsc.frequency.setValueAtTime(bird.f1, now + bird.t);
+      bOsc.frequency.exponentialRampToValueAtTime(bird.f2, now + bird.t + bird.d);
+      bGain.gain.setValueAtTime(0.0001, now + bird.t);
+      bGain.gain.linearRampToValueAtTime(0.22, now + bird.t + 0.02);
+      bGain.gain.exponentialRampToValueAtTime(0.0001, now + bird.t + bird.d);
+      bOsc.connect(bGain);
+      bGain.connect(this.sfxGain!);
+      bOsc.start(now + bird.t);
+      bOsc.stop(now + bird.t + bird.d + 0.02);
+    });
+
+    // Chants d'enfants mélodieux
+    this.playChildrenVocalMelody(now + 0.3);
+  }
+
+  /** 2.2 Un peu de rallye au loin qui fait rêver */
+  private playDistantRallyRumble(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    const osc = this.ctx.createOscillator();
+    const filter = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(110, now);
+    osc.frequency.exponentialRampToValueAtTime(240, now + 1.5);
+    osc.frequency.exponentialRampToValueAtTime(140, now + 2.5);
+
+    // Filtre passe-bas très sourd pour sonner lointain et feutré
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(450, now);
+    filter.Q.setValueAtTime(2.0, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.35, now + 0.8);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.6);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start(now);
+    osc.stop(now + 2.65);
+  }
+
+  /** 3.1 Dans la ville : Klaxons et circulation urbaine */
+  private playCityHornsAndTraffic(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    // Double coup de klaxon urbain (La4 440Hz + Do#5 554Hz)
+    [0.1, 0.45].forEach((t) => {
+      const h1 = this.ctx!.createOscillator();
+      const h2 = this.ctx!.createOscillator();
+      const hGain = this.ctx!.createGain();
+
+      h1.type = "sawtooth";
+      h2.type = "sawtooth";
+      h1.frequency.setValueAtTime(440, now + t);
+      h2.frequency.setValueAtTime(554, now + t);
+
+      hGain.gain.setValueAtTime(0.0001, now + t);
+      hGain.gain.linearRampToValueAtTime(0.48, now + t + 0.015);
+      hGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.22);
+
+      h1.connect(hGain);
+      h2.connect(hGain);
+      hGain.connect(this.sfxGain!);
+
+      h1.start(now + t);
+      h2.start(now + t);
+      h1.stop(now + t + 0.24);
+      h2.stop(now + t + 0.24);
+    });
+
+    // Passage de voiture citadine
+    const car = this.ctx.createOscillator();
+    const cFilter = this.ctx.createBiquadFilter();
+    const cGain = this.ctx.createGain();
+    car.type = "triangle";
+    car.frequency.setValueAtTime(180, now + 0.6);
+    car.frequency.exponentialRampToValueAtTime(90, now + 2.2);
+    cFilter.type = "lowpass";
+    cFilter.frequency.setValueAtTime(600, now + 0.6);
+    cGain.gain.setValueAtTime(0.0001, now + 0.6);
+    cGain.gain.linearRampToValueAtTime(0.38, now + 1.2);
+    cGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.3);
+    car.connect(cFilter);
+    cFilter.connect(cGain);
+    cGain.connect(this.sfxGain);
+    car.start(now + 0.6);
+    car.stop(now + 2.35);
+  }
+
+  /** 3.2 Bruit urbain, passage des voitures & dynamisme de Cotonou */
+  private playCityUrbanAmbience(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    const traffic = this.createNoiseBufferNode(2.5);
+    const filter = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(450, now);
+    filter.frequency.linearRampToValueAtTime(1100, now + 1.2);
+    filter.frequency.exponentialRampToValueAtTime(400, now + 2.4);
+    filter.Q.setValueAtTime(1.8, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.50, now + 0.5);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.45);
+
+    traffic.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+    traffic.start(now);
+  }
+
+  /** 4.1 Écriture : Tracé au crayon graphite sur papier calque */
+  private playPencilWriting(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    [0.05, 0.40, 0.78, 1.15].forEach((t, i) => {
+      const stroke = this.createNoiseBufferNode(0.32);
+      const sFilter = this.ctx!.createBiquadFilter();
+      sFilter.type = "bandpass";
+      sFilter.frequency.setValueAtTime(2200 + i * 320, now + t);
+      sFilter.Q.setValueAtTime(3.6, now + t);
+      const sGain = this.ctx!.createGain();
+      sGain.gain.setValueAtTime(0.0001, now + t);
+      sGain.gain.linearRampToValueAtTime(0.55, now + t + 0.02);
+      sGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.28);
+
+      stroke.connect(sFilter);
+      sFilter.connect(sGain);
+      sGain.connect(this.sfxGain!);
+      stroke.start(now + t);
+    });
+  }
+
+  /** 4.2 Taper sur l'ordinateur & bruits d'ordinateur */
+  private playKeyboardAndComputer(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    // Touches de clavier mécanique (rafale rapide)
+    [0.05, 0.15, 0.28, 0.42, 0.52, 0.68, 0.82, 0.95, 1.12, 1.25].forEach((t) => {
+      const key = this.ctx!.createOscillator();
+      const kGain = this.ctx!.createGain();
+      key.type = "triangle";
+      key.frequency.setValueAtTime(1600 + Math.random() * 800, now + t);
+      kGain.gain.setValueAtTime(0.0001, now + t);
+      kGain.gain.linearRampToValueAtTime(0.35, now + t + 0.004);
+      kGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.04);
+      key.connect(kGain);
+      kGain.connect(this.sfxGain!);
+      key.start(now + t);
+      key.stop(now + t + 0.045);
+    });
+
+    // Bip d'ordinateur / calcul DAO
+    const beep = this.ctx.createOscillator();
+    const bGain = this.ctx.createGain();
+    beep.type = "sine";
+    beep.frequency.setValueAtTime(1174.66, now + 1.4); // D6
+    bGain.gain.setValueAtTime(0.0001, now + 1.4);
+    bGain.gain.linearRampToValueAtTime(0.25, now + 1.41);
+    bGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.7);
+    beep.connect(bGain);
+    bGain.connect(this.sfxGain);
+    beep.start(now + 1.4);
+    beep.stop(now + 1.75);
+  }
+
+  /** 5.1 Test de la maquette : Bolides de rallye & passages de karting en essai */
+  private playPrototypeTesting(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    this.playRallyKartEngine(now, true);
+    // Vibreur d'essai dynamique
+    [0.6, 0.68, 0.76, 0.84].forEach((t) => {
+      const kerb = this.ctx!.createOscillator();
+      const kGain = this.ctx!.createGain();
+      kerb.type = "triangle";
+      kerb.frequency.setValueAtTime(260, now + t);
+      kGain.gain.setValueAtTime(0.0001, now + t);
+      kGain.gain.linearRampToValueAtTime(0.38, now + t + 0.008);
+      kGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.05);
+      kerb.connect(kGain);
+      kGain.connect(this.sfxGain!);
+      kerb.start(now + t);
+      kerb.stop(now + t + 0.06);
+    });
+  }
+
+  /** 5.2 Complexe & ateliers : Bruits de karting et d'ingénierie */
+  private playComplexKartPaddock(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    // Clé à chocs et serrage atelier
+    [0.05, 0.12, 0.19, 0.26, 0.33].forEach((t) => {
+      const hammer = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      hammer.type = "sawtooth";
+      hammer.frequency.setValueAtTime(720, now + t);
+      gain.gain.setValueAtTime(0.0001, now + t);
+      gain.gain.linearRampToValueAtTime(0.45, now + t + 0.006);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.04);
+      hammer.connect(gain);
+      gain.connect(this.sfxGain!);
+      hammer.start(now + t);
+      hammer.stop(now + t + 0.045);
+    });
+    // Kart en réglage moteur
+    this.playRallyKartEngine(now + 0.45, true);
+  }
+
+  /** 6.1 Le Lion emblématique & rugissements puissants des moteurs */
+  private playLionRoarAndEngine(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    // 1. Grondement noble du lion (sub 60Hz + harmonique féline gutturale)
+    const sub = this.ctx.createOscillator();
+    const growl = this.ctx.createOscillator();
+    const lionGain = this.ctx.createGain();
+
+    sub.type = "triangle";
+    sub.frequency.setValueAtTime(55, now);
+    sub.frequency.exponentialRampToValueAtTime(42, now + 1.8);
+
+    growl.type = "sawtooth";
+    growl.frequency.setValueAtTime(95, now);
+    growl.frequency.exponentialRampToValueAtTime(70, now + 1.8);
+
+    lionGain.gain.setValueAtTime(0.0001, now);
+    lionGain.gain.linearRampToValueAtTime(0.70, now + 0.4);
+    lionGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
+
+    sub.connect(lionGain);
+    growl.connect(lionGain);
+    lionGain.connect(this.sfxGain);
+
+    sub.start(now);
+    growl.start(now);
+    sub.stop(now + 2.1);
+    growl.stop(now + 2.1);
+
+    // 2. Superposition du rugissement de moteur de course
+    this.playRallyCarAcceleration(now + 0.2);
+  }
+
+  /** 6.2 Pré-grille, courses, freinages violents et montées en régime */
+  private playPreGridBraking(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    this.playHardBrakeScreech(now);
+    this.playRallyKartEngine(now + 0.6, true);
+  }
+
+  /** 7.1 Gros freinage crissant sur l'asphalte et claquements secs sur le vibreur */
+  private playHardBrakeScreech(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    const screech = this.createNoiseBufferNode(1.3);
+    const filter = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(2800, now);
+    filter.frequency.exponentialRampToValueAtTime(1400, now + 1.1);
+    filter.Q.setValueAtTime(4.2, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.68, now + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.25);
+
+    screech.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+    screech.start(now);
+
+    // Clac-clac sur les cannelures du vibreur
+    [0.15, 0.24, 0.33, 0.42, 0.51, 0.60].forEach((t) => {
+      const kerb = this.ctx!.createOscillator();
+      const kGain = this.ctx!.createGain();
+      kerb.type = "triangle";
+      kerb.frequency.setValueAtTime(310, now + t);
+      kGain.gain.setValueAtTime(0.0001, now + t);
+      kGain.gain.linearRampToValueAtTime(0.45, now + t + 0.008);
+      kGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.06);
+      kerb.connect(kGain);
+      kGain.connect(this.sfxGain!);
+      kerb.start(now + t);
+      kerb.stop(now + t + 0.07);
+    });
+  }
+
+  /** 7.2 Accélération foudroyante & survol ultra-rapide de drone FPV */
+  private playKartAccelerationAndDrone(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    // Accélération kart plein gaz
+    this.playRallyKartEngine(now, true);
+    // Drone FPV survol
+    this.playDroneFlightSwoosh(now + 0.2);
+  }
+
+  /** 8.1 Ambiance tranquille : Les gens qui crient, clameur de la foule chaleureuse */
+  private playCrowdCheerRelaxed(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    const crowd = this.createNoiseBufferNode(2.6);
+    const filter = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(900, now);
+    filter.frequency.linearRampToValueAtTime(1300, now + 1.2);
+    filter.Q.setValueAtTime(1.6, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.55, now + 0.4);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5);
+
+    crowd.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+    crowd.start(now);
+  }
+
+  /** 8.2 Au loin le bruit du circuit de karting en écho feutré */
+  private playDistantCircuitEcho(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    this.playDistantRallyRumble(now);
+  }
+
+  /** 9.1 La foule & salves d'applaudissements nourris */
+  private playCrowdApplause(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    const applause = this.createNoiseBufferNode(2.8);
+    const filter = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(1800, now);
+    filter.Q.setValueAtTime(1.2, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.68, now + 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.7);
+
+    applause.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+    applause.start(now);
+  }
+
+  /** 9.2 Le rallye sous les acclamations et applaudissements de la foule */
+  private playRallyWithApplause(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    this.playCrowdApplause(now);
+    this.playRallyKartEngine(now + 0.3, false);
+  }
+
+  /** 10.1 Paddock officiel : Un peu de rallye feutré au ralenti dans les stands */
+  private playQuietPaddockKart(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    const osc = this.ctx.createOscillator();
+    const filter = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+
+    osc.type = "sawtooth";
+    // Moteur au ralenti doux (stands / paddock)
+    osc.frequency.setValueAtTime(85, now);
+    osc.frequency.linearRampToValueAtTime(110, now + 1.2);
+    osc.frequency.linearRampToValueAtTime(80, now + 2.2);
+
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(500, now);
+    filter.Q.setValueAtTime(1.5, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.35, now + 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.3);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start(now);
+    osc.stop(now + 2.35);
+  }
+
+  /** 10.2 Ambiance paddock feutrée & signaux de chronométrage officiel */
+  private playPaddockTelemetryOfficial(now: number) {
+    if (!this.ctx || !this.sfxGain) return;
+    // Bips de chronométrage officiel de haute précision
+    [0.1, 0.35, 0.60].forEach((t, i) => {
+      const ping = this.ctx!.createOscillator();
+      const pGain = this.ctx!.createGain();
+      ping.type = "sine";
+      ping.frequency.setValueAtTime(1760 + i * 220, now + t);
+      pGain.gain.setValueAtTime(0.0001, now + t);
+      pGain.gain.linearRampToValueAtTime(0.38, now + t + 0.008);
+      pGain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.12);
+      ping.connect(pGain);
+      pGain.connect(this.sfxGain!);
+      ping.start(now + t);
+      ping.stop(now + t + 0.13);
+    });
+
+    // Chime officiel
+    const chime = this.ctx.createOscillator();
+    const cGain = this.ctx.createGain();
+    chime.type = "triangle";
+    chime.frequency.setValueAtTime(1046.5, now + 0.9); // C6
+    cGain.gain.setValueAtTime(0.0001, now + 0.9);
+    cGain.gain.linearRampToValueAtTime(0.42, now + 0.92);
+    cGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
+    chime.connect(cGain);
+    cGain.connect(this.sfxGain);
+    chime.start(now + 0.9);
+    chime.stop(now + 2.25);
   }
 
   // =========================================================================
@@ -2595,6 +2729,16 @@ class CinematicAudioSystem {
   }
 
   private stopContinuousSounds() {
+    if (this.currentAmbianceAudio) {
+      try {
+        this.currentAmbianceAudio.pause();
+        this.currentAmbianceAudio.currentTime = 0;
+      } catch {
+        // Ignore
+      }
+      this.currentAmbianceAudio = null;
+    }
+
     this.activeIntervals.forEach((id) => clearInterval(id));
     this.activeIntervals = [];
 
