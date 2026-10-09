@@ -38,8 +38,8 @@ export const PROPOSAL_DATA = {
     project: "PROJET KARTING",
     location: "BÉNIN",
     client: "KOFFI & DIABATÉ",
-    conceptTitle: "DU RÊVE À LA COURSE",
-    conceptSignature: "ENTER THE RACE",
+    conceptTitle: "GO BEYOND — KARTING BÉNIN & AAA",
+    conceptSignature: "DU RÊVE À LA RÉALITÉ",
     format: "16:9 – UHD / 4K",
     targetDuration: "2’30 à 3’00",
   },
@@ -47,9 +47,9 @@ export const PROPOSAL_DATA = {
   vision: {
     headline: "DONNER VIE AU PROJET AVANT SA CONSTRUCTION.",
     context:
-      "Le futur karting est actuellement en phase de développement et le site est encore en phase de terrassement. Cette situation constitue une contrainte pour une production audiovisuelle classique, mais elle offre également une opportunité créative.",
+      "Le futur karting est actuellement en phase de développement et le site est encore en phase de terrassement. Cette situation constitue une opportunité unique pour une création cinématographique et une web-série augmentée par l'intelligence artificielle.",
     coreArgument:
-      "À partir de la maquette Revit, des plans DWG, des références architecturales et des informations techniques qui nous seront transmises, AFRIKAFUN propose de créer un film cinématographique photoréaliste, permettant au spectateur de découvrir et surtout de ressentir le futur équipement. L'objectif n'est pas une simple visite virtuelle, mais un véritable film de lancement empruntant les codes du sport automobile haut de gamme et de la bande-annonce.",
+      "À partir de la maquette Revit, des plans DWG, des références architecturales et des informations techniques transmises, AFRIKAFUN Production déploie une œuvre cinématographique photoréaliste et la web-série « Go Beyond », permettant au spectateur de ressentir l'intensité du futur équipement. L'objectif dépasse la simple visite virtuelle : c'est un véritable outil d'engouement populaire et d'investissement mondial.",
     rhythmNarrative: [
       "ÉMOTION",
       "ARCHITECTURE",

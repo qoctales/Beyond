@@ -192,7 +192,7 @@ class CinematicAudioSystem {
       case 9:
         return "Transmettre & S'élever : Coucher de Soleil Océanique, Grue & Relais";
       case 10:
-        return "Paddock & Budget : Executive Tech Lounge & Télémétrie Officielle";
+        return "L'Agence AAA : Studio IA Augmentée & Thème Symphonique Futuriste";
       default:
         return "Atmosphère Karting International Bénin";
     }
@@ -302,6 +302,9 @@ class CinematicAudioSystem {
 
   public setAmbienceVolume(val: number) {
     this.ambienceVol = Math.max(0, Math.min(1, val));
+    if (this.currentAmbianceAudio) {
+      this.currentAmbianceAudio.volume = Math.min(1, this.ambienceVol * this.masterVol * 1.5);
+    }
     if (this.ctx && this.ambienceGain) {
       this.ambienceGain.gain.setValueAtTime(this.ambienceVol, this.ctx.currentTime);
     }
@@ -321,12 +324,12 @@ class CinematicAudioSystem {
   public updateSlideAmbience(slideNumber: number) {
     if (this.isMuted) return;
     this.initAudio();
-    if (!this.ctx) return;
 
     // Arrêt doux de la musique précédente
     this.stopContinuousSounds();
 
-    // Lance la composition d'ambiance procédurale douce, lancinante et tranquille demandée
+    // Démarrage instantané (0ms de latence) des ambiances procédurales riches,
+    // mélodieuses, rythmées et intrigantes appréciées par l'utilisateur
     this.playProceduralAmbience(slideNumber);
   }
 
@@ -734,31 +737,105 @@ class CinematicAudioSystem {
       this.currentFxAudio = null;
     }
 
-    // 1. Play real audio cut from uploaded audio files
+    // 1. Play real audio cut from uploaded audio files (5 seconds normalized cuts)
     try {
       const cutUrl = `/audio/cuts/slide${slideId}_fx${fxIndex}.mp3`;
       const fxAudio = new Audio(cutUrl);
       fxAudio.volume = Math.min(1, this.sfxVol * this.masterVol);
-      fxAudio.onended = () => {
+
+      let isDone = false;
+      const cleanup = () => {
+        if (isDone) return;
+        isDone = true;
+        if (this.currentFxAudio === fxAudio) {
+          this.currentFxAudio = null;
+        }
         this.isPlayingRealisticFx = false;
         this.notify();
       };
+
+      fxAudio.onended = cleanup;
+
+      // Arrêt strict à 5 secondes pour une durée uniforme et équivalente
+      const timer = setTimeout(() => {
+        if (this.currentFxAudio === fxAudio && !isDone) {
+          try {
+            fxAudio.pause();
+          } catch {}
+          cleanup();
+        }
+      }, 5050);
+
       const p = fxAudio.play();
       if (p) {
         p.then(() => {
           this.currentFxAudio = fxAudio;
         }).catch(() => {
-          this.playProceduralSpecificFx(slideId, fxIndex);
+          clearTimeout(timer);
+          // Fallback sur le fichier source avec coupure stricte à 5s
+          this.playDirectSourceFx(slideId, fxIndex);
         });
       } else {
         this.currentFxAudio = fxAudio;
       }
       return;
     } catch {
-      // Fallback
+      this.playDirectSourceFx(slideId, fxIndex);
+      return;
     }
 
     this.playProceduralSpecificFx(slideId, fxIndex);
+  }
+
+  private playDirectSourceFx(slideId: number, fxIndex: 1 | 2) {
+    const sourceSlide = slideId === 8 ? 3 : slideId;
+    let url: string;
+    if (slideId === 1 || slideId === 10) {
+      url = `/audio/cuts/slide${slideId}_fx${fxIndex}.mp3`;
+    } else {
+      url = `/audio/Beyond ${sourceSlide} effet ${fxIndex}.mp3`;
+    }
+
+    try {
+      const audio = new Audio(url);
+      audio.volume = Math.min(1, this.sfxVol * this.masterVol);
+      let isDone = false;
+      const cleanup = () => {
+        if (isDone) return;
+        isDone = true;
+        if (this.currentFxAudio === audio) {
+          this.currentFxAudio = null;
+        }
+        this.isPlayingRealisticFx = false;
+        this.notify();
+      };
+
+      audio.onended = cleanup;
+
+      // Arrêt automatique à exactement 5 secondes
+      const timer = setTimeout(() => {
+        if (this.currentFxAudio === audio && !isDone) {
+          try {
+            audio.pause();
+          } catch {}
+          cleanup();
+        }
+      }, 5000);
+
+      const p = audio.play();
+      if (p) {
+        p.then(() => {
+          this.currentFxAudio = audio;
+        }).catch(() => {
+          clearTimeout(timer);
+          this.playProceduralSpecificFx(slideId, fxIndex);
+        });
+      } else {
+        this.currentFxAudio = audio;
+      }
+    } catch {
+      this.playProceduralSpecificFx(slideId, fxIndex);
+    }
   }
 
   private playProceduralSpecificFx(slideId: number, fxIndex: 1 | 2) {

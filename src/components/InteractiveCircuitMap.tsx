@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { sound } from '../utils/audio';
 import { scrollToSlideTop } from '../utils/scrollHelper';
+import { resolveImage } from '../data/slidesData';
 
 export interface CircuitCheckpoint {
   id: number;
@@ -12,21 +13,155 @@ export interface CircuitCheckpoint {
   short: string;
   cx: number;
   cy: number;
+  image: string;       // Miniature représentative du stand
+  imageKarting: string; // Image série Karting Bénin
+  imageAaa: string;     // Image série AAA
   isDamier?: boolean;
 }
 
-// 10 Stands mathematically equidistant (43.3 px intervals) along the complete circuit loop
+// 10 Stands mathématiquement équidistants le long du circuit avec miniature dédiée
 export const CHECKPOINTS: CircuitCheckpoint[] = [
-  { id: 0, slideIndex: 0, standNumber: "01", num: 1, label: "01 Départ", verbs: "DÉPART", short: "S1", cx: 38.0, cy: 91.9 },
-  { id: 1, slideIndex: 1, standNumber: "02", num: 2, label: "02 Rêver · Oser", verbs: "RÊVER · OSER", short: "S2", cx: 81.2, cy: 90.3 },
-  { id: 2, slideIndex: 2, standNumber: "03", num: 3, label: "03 Jouer · Rencontrer", verbs: "JOUER · RENCONTRER", short: "S3", cx: 124.4, cy: 88.1 },
-  { id: 3, slideIndex: 3, standNumber: "04", num: 4, label: "04 Imaginer · Dessiner", verbs: "IMAGINER · DESSINER", short: "S4", cx: 165.2, cy: 76.9 },
-  { id: 4, slideIndex: 4, standNumber: "05", num: 5, label: "05 Concevoir · Bâtir", verbs: "CONCEVOIR · BÂTIR", short: "S5", cx: 185.7, cy: 40.2 },
-  { id: 5, slideIndex: 5, standNumber: "06", num: 6, label: "06 S'équiper · Frémir", verbs: "S'ÉQUIPER · FRÉMIR", short: "S6", cx: 157.2, cy: 15.6 },
-  { id: 6, slideIndex: 6, standNumber: "07", num: 7, label: "07 S'engager · Se Dépasser", verbs: "S'ENGAGER · SE DÉPASSER", short: "S7", cx: 117.5, cy: 26.5 },
-  { id: 7, slideIndex: 7, standNumber: "08", num: 8, label: "08 Rassembler · Vibrer", verbs: "RASSEMBLER · VIBRER", short: "S8", cx: 79.7, cy: 30.2 },
-  { id: 8, slideIndex: 8, standNumber: "09", num: 9, label: "09 Transmettre · S'élever", verbs: "TRANSMETTRE · S'ÉLEVER", short: "S9", cx: 38.5, cy: 24.8 },
-  { id: 9, slideIndex: 9, standNumber: "10", num: 10, label: "10 Budget 🏁", verbs: "BUDGET", short: "🏁", cx: 18.5, cy: 59.5, isDamier: true },
+  { 
+    id: 0, 
+    slideIndex: 0, 
+    standNumber: "01", 
+    num: 1, 
+    label: "Départ", 
+    verbs: "DÉPART", 
+    short: "S1", 
+    cx: 38.0, 
+    cy: 91.9,
+    image: "/src/assets/images/master_hero_combinaison_1791247080379.jpg",
+    imageKarting: "/src/assets/images/master_hero_combinaison_1791247080379.jpg",
+    imageAaa: "/src/assets/images/poster_serie_aaa_moderne_1791447856263.jpg"
+  },
+  { 
+    id: 1, 
+    slideIndex: 1, 
+    standNumber: "02", 
+    num: 2, 
+    label: "Rêver · Oser", 
+    verbs: "RÊVER · OSER", 
+    short: "S2", 
+    cx: 81.2, 
+    cy: 90.3,
+    image: "/src/assets/images/rever_etincelle_reve_1791210780013.jpg",
+    imageKarting: "/src/assets/images/rever_etincelle_reve_1791210780013.jpg",
+    imageAaa: "/src/assets/images/aaa_ep1_audace_alliance_1791450939734.jpg"
+  },
+  { 
+    id: 2, 
+    slideIndex: 2, 
+    standNumber: "03", 
+    num: 3, 
+    label: "Jouer · Rencontrer", 
+    verbs: "JOUER · RENCONTRER", 
+    short: "S3", 
+    cx: 124.4, 
+    cy: 88.1,
+    image: "/src/assets/images/jouer_course_poussiere_1791211122585.jpg",
+    imageKarting: "/src/assets/images/jouer_course_poussiere_1791211122585.jpg",
+    imageAaa: "/src/assets/images/aaa_ep2_tournage_plateau_1791450957291.jpg"
+  },
+  { 
+    id: 3, 
+    slideIndex: 3, 
+    standNumber: "04", 
+    num: 4, 
+    label: "Imaginer · Dessiner", 
+    verbs: "IMAGINER · DESSINER", 
+    short: "S4", 
+    cx: 165.2, 
+    cy: 76.9,
+    image: "/src/assets/images/imaginer_carnet_croquis_1791211202884.jpg",
+    imageKarting: "/src/assets/images/imaginer_carnet_croquis_1791211202884.jpg",
+    imageAaa: "/src/assets/images/dessiner_plan_cad_kd_1791212938094.jpg"
+  },
+  { 
+    id: 4, 
+    slideIndex: 4, 
+    standNumber: "05", 
+    num: 5, 
+    label: "Concevoir · Bâtir", 
+    verbs: "CONCEVOIR · BÂTIR", 
+    short: "S5", 
+    cx: 185.7, 
+    cy: 40.2,
+    image: "/src/assets/images/concevoir_maquette_build_1791211549362.jpg",
+    imageKarting: "/src/assets/images/concevoir_maquette_build_1791211549362.jpg",
+    imageAaa: "/src/assets/images/aaa_ep4_bar_cotonou_1791451004629.jpg"
+  },
+  { 
+    id: 5, 
+    slideIndex: 5, 
+    standNumber: "06", 
+    num: 6, 
+    label: "S'équiper · Frémir", 
+    verbs: "S'ÉQUIPER · FRÉMIR", 
+    short: "S6", 
+    cx: 157.2, 
+    cy: 15.6,
+    image: "/src/assets/images/fremir_cockpit_volant_1791211739896.jpg",
+    imageKarting: "/src/assets/images/fremir_cockpit_volant_1791211739896.jpg",
+    imageAaa: "/src/assets/images/aaa_ep5_romeo_salon_ia_1791451019865.jpg"
+  },
+  { 
+    id: 6, 
+    slideIndex: 6, 
+    standNumber: "07", 
+    num: 7, 
+    label: "S'engager · Se Dépasser", 
+    verbs: "S'ENGAGER · SE DÉPASSER", 
+    short: "S7", 
+    cx: 117.5, 
+    cy: 26.5,
+    image: "/src/assets/images/sedepasser_duel_karts_1791211804690.jpg",
+    imageKarting: "/src/assets/images/sedepasser_duel_karts_1791211804690.jpg",
+    imageAaa: "/src/assets/images/aaa_ep6_poignee_main_1791451035896.jpg"
+  },
+  { 
+    id: 7, 
+    slideIndex: 7, 
+    standNumber: "08", 
+    num: 8, 
+    label: "Rassembler · Vibrer", 
+    verbs: "RASSEMBLER · VIBRER", 
+    short: "S8", 
+    cx: 79.7, 
+    cy: 30.2,
+    image: "/src/assets/images/vibrer_foule_tribunes_1791211862994.jpg",
+    imageKarting: "/src/assets/images/vibrer_foule_tribunes_1791211862994.jpg",
+    imageAaa: "/src/assets/images/agence_ai_pitch_1791446553710.jpg"
+  },
+  { 
+    id: 8, 
+    slideIndex: 8, 
+    standNumber: "09", 
+    num: 9, 
+    label: "Transmettre · S'élever", 
+    verbs: "TRANSMETTRE · S'ÉLEVER", 
+    short: "S9", 
+    cx: 58.5, 
+    cy: 26.5,
+    image: "/src/assets/images/transmettre_relais_benin_1791212278040.jpg",
+    imageKarting: "/src/assets/images/transmettre_relais_benin_1791212278040.jpg",
+    imageAaa: "/src/assets/images/aaa_ep8_formation_jeunes_1791451052358.jpg"
+  },
+  { 
+    id: 9, 
+    slideIndex: 9, 
+    standNumber: "10", 
+    num: 10, 
+    label: "L'Agence AAA 🏁", 
+    verbs: "AGENCE AAA · FINISH", 
+    short: "🏁", 
+    cx: 38.5, 
+    cy: 24.8,
+    image: "/src/assets/images/agence_ia_studio_office_1791409217543.jpg",
+    imageKarting: "/src/assets/images/batir_complexe_nuit_lumieres_1791211586769.jpg",
+    imageAaa: "/src/assets/images/agence_ia_studio_office_1791409217543.jpg",
+    isDamier: true
+  },
 ];
 
 export interface InteractiveCircuitMapProps {
@@ -70,16 +205,16 @@ export const InteractiveCircuitMap: React.FC<InteractiveCircuitMapProps> = ({
   };
 
   return (
-    <div className={`relative p-2.5 sm:p-3 rounded-2xl bg-[#090b10] border border-white/15 shadow-xl backdrop-blur-md flex flex-col justify-between max-w-full overflow-hidden ${className}`}>
+    <div className={`relative p-2.5 sm:p-3 rounded-2xl bg-[#090b10] border border-white/15 shadow-xl flex flex-col justify-between max-w-full overflow-hidden ${className}`}>
       
-      {/* Top Telemetry Header : Circuit du Bénin */}
+      {/* Top Telemetry Header : Parcours de création */}
       <div className="flex items-center justify-between text-[11px] font-mono mb-1.5">
         <span className="flex items-center gap-1.5 text-neutral-300">
           <span className="w-1.5 h-1.5 rounded-full bg-[#ff1e00] animate-ping" />
-          <span className="text-white font-bold tracking-wider uppercase">CIRCUIT DU BÉNIN</span>
+          <span className="text-white font-bold tracking-wider uppercase">PARCOURS DE CRÉATION</span>
         </span>
         <span className="text-[#ff1e00] font-bold tracking-wide">
-          STAND {String(currentSlideIndex + 1).padStart(2, '0')}/10
+          ÉTAPE {currentSlideIndex + 1}/10
         </span>
       </div>
 
@@ -165,7 +300,7 @@ export const InteractiveCircuitMap: React.FC<InteractiveCircuitMapProps> = ({
                       <rect x="0" y="3.2" width="3.2" height="3.2" fill="#000000" />
                       <rect x="3.2" y="3.2" width="3.2" height="3.2" fill="#ffffff" />
                     </g>
-                    {/* Small '10' indicator badge above damier node for clarity */}
+                    {/* Indicator badge above damier node for clarity */}
                     <text
                       x={cp.cx}
                       y={cp.cy - 7.5}
@@ -177,7 +312,7 @@ export const InteractiveCircuitMap: React.FC<InteractiveCircuitMapProps> = ({
                       fill={isActive ? "#ff1e00" : isHovered ? "#ffffff" : "#ff1e00"}
                       pointerEvents="none"
                     >
-                      10
+                      {cp.num}
                     </text>
                   </g>
                 ) : (
@@ -233,14 +368,63 @@ export const InteractiveCircuitMap: React.FC<InteractiveCircuitMapProps> = ({
         </svg>
       </div>
 
-      {/* Stand Info Bar on Hover / Active : clean and straightforward */}
-      <div className="mt-1 flex items-center justify-between text-[10px] font-mono pt-1.5 border-t border-white/10">
-        <span className="text-neutral-300 font-medium truncate max-w-[170px] whitespace-nowrap">
-          {displayedHover.label}
-        </span>
-        <span className="text-[#ff1e00] font-bold shrink-0">
-          CHOISIR UN STAND
-        </span>
+      {/* Stand Info Bar on Hover / Active with split image preview */}
+      <div className="mt-1 flex items-center justify-between gap-2 text-[10px] font-mono pt-1.5 border-t border-white/10">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-10 h-6 rounded-md overflow-hidden border border-white/20 bg-black shrink-0 relative flex select-none">
+            {/* Moitié Gauche : Karting Bénin */}
+            <div 
+              className="absolute inset-0 w-full h-full overflow-hidden"
+              style={{ clipPath: 'polygon(0 0, 54% 0, 46% 100%, 0 100%)' }}
+            >
+              <img 
+                src={resolveImage(displayedHover.imageKarting || displayedHover.image)} 
+                alt={`${displayedHover.label} — Karting Bénin`}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const img = e.currentTarget;
+                  const filename = (displayedHover.imageKarting || displayedHover.image).split('/').pop();
+                  if (filename && !img.src.includes(`/images/${filename}`)) {
+                    img.src = `/images/${filename}`;
+                  }
+                }}
+              />
+            </div>
+
+            {/* Ligne oblique centrale */}
+            <div className="absolute inset-y-0 left-1/2 w-[1.5px] -translate-x-1/2 -skew-x-6 bg-gradient-to-b from-[#ff1e00] via-white to-[#ff1e00] z-10 shadow-[0_0_6px_rgba(255,30,0,0.8)]" />
+
+            {/* Moitié Droite : AAA */}
+            <div 
+              className="absolute inset-0 w-full h-full overflow-hidden"
+              style={{ clipPath: 'polygon(54% 0, 100% 0, 100% 100%, 46% 100%)' }}
+            >
+              <img 
+                src={resolveImage(displayedHover.imageAaa || displayedHover.image)} 
+                alt={`${displayedHover.label} — AAA`}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const img = e.currentTarget;
+                  const filename = (displayedHover.imageAaa || displayedHover.image).split('/').pop();
+                  if (filename && !img.src.includes(`/images/${filename}`)) {
+                    img.src = `/images/${filename}`;
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-[#ff1e00] font-bold">#{displayedHover.num}</span>
+            <span className="text-neutral-200 font-medium truncate whitespace-nowrap">
+              {displayedHover.label}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 text-[9px] text-neutral-400 shrink-0">
+          <span className="text-white font-bold">KB</span>
+          <span className="text-neutral-500">/</span>
+          <span className="text-[#ff1e00] font-bold">AAA</span>
+        </div>
       </div>
 
     </div>
